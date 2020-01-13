@@ -200,34 +200,56 @@ if IS_WINDOWS:
         SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0, u'Environment',
                     SMTO_ABORTIFHUNG, 5000, ctypes.pointer(wintypes.DWORD()))
 
+class MinicondaOfflineInstaller:
+    def __init__(self):
+        self.extensions = {
+            'Windows': 'exe',
+            'Linux': 'sh',
+            'Darwin': 'sh'
+        }
+        self.platforms = {
+            'Windows': 'Windows',
+            'Linux': 'Linux',
+            'Darwin': 'MacOSX'
+        }
+        self.architectures = {
+            '64bit': 'x86_64'
+        }
+        self.system = platform.system()
+        self.conda_python_version = '3'
+        self.bitness = '64bit'
+        self.distribution = 'Miniconda'
+        self.conda_bz2_src_packages = os.path.join(self.build_install_dir, 'pkgs', '*.bz2')
+        self.conda_conda_src_packages = os.path.join(self.build_install_dir, 'pkgs', '*.conda')
 
-class AnacondaMixin(object):
-    """Run the Anaconda/Miniconda installer from Continuum Analytics.
-    https://store.continuum.io/cshop/anaconda/
+    @property
+    def name(self):
+        return 'miniconda3'
 
-    This mixin class can be used to run the Anaconda or Miniconda installers
-    in a given platform.
+    @property
+    def build_install_dir(self):
+        '''Where the temporary conda distribution will be installed'''
+        return 'build_temp'
 
-    The class inheriting from this mixin *must* have the following attributes:
-    - installer: string representing the full path to the installer file
-    - version: string representing the anaconda version number
-    - distribution: string, either 'Anaconda' or 'Miniconda'
-    - build_install_dir: string representing the path to the install destination
-    """
-    extensions = {'Windows': 'exe',
-                  'Linux': 'sh',
-                  'Darwin': 'sh'}
+    @property
+    def artefact_id(self):
+        '''The artefact identifies, based on build id and system, used to find the right files in devops pipelines'''
+        return self.name + '-' + miniconda_installer_version() + '-' + build_id() + '-' + build_osname()
+    
+    @property
+    def output_dir(self):
+        '''The output directory, where the installer and the offline channel end up'''
+        return os.path.join('output', self.artefact_id)
 
-    platforms = {'Windows': 'Windows',
-                 'Linux': 'Linux',
-                 'Darwin': 'MacOSX'}
+    @property
+    def output_installer(self):
+        '''local path to the miniconda installer'''
+        return os.path.join(self.output_dir, self.installer_name)
 
-    architectures = {'64bit': 'x86_64'}
-
-    system = platform.system()
-
-    conda_python_version = '3'
-    bitness = '64bit'
+    @property
+    def output_conda_offline_channel(self):
+        '''local path to the resulting offline conda installer'''
+        return os.path.join(self.output_dir, 'conda_offline_channel')
 
     @property
     def installer_name(self):
@@ -236,15 +258,143 @@ class AnacondaMixin(object):
             self.distribution,
             self.conda_python_version,
             miniconda_installer_version(),
-            AnacondaMixin.platforms[AnacondaMixin.system],
-            AnacondaMixin.architectures[self.bitness],
-            AnacondaMixin.extensions[AnacondaMixin.system])
+            self.platforms[self.system],
+            self.architectures[self.bitness],
+            self.extensions[self.system])
 
-    def base_conda_packages(self):
-        pkgs = ['conda-build', 'conda-verify', 'jinja2']
-        if IS_WINDOWS:
-            pkgs += ['unxutils']
-        return pkgs
+    def get_source_packages_from_mirror(self):
+        installer_url='https://repo.continuum.io/miniconda/%s' % self.installer_name
+        print("Get %s -> %s" % (installer_url, self.output_installer))
+        r = requests.get(installer_url)
+        with open(self.output_installer, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+
+    def clean_build_and_output(self):
+        try:
+            shutil.rmtree(self.output_dir)
+        except:
+            pass
+        try:
+            shutil.rmtree(self.build_install_dir)
+        except:
+            pass
+
+    def conda_cleanup(self, *package_specs):
+        """Remove package archives (so that we don't distribute them as they are already part of the installer)
+        """
+        self._run_pkg_manager('conda', ['clean', '-y', '--all'])
+
+    def conda_update(self, *package_specs):
+        """Update local packages that are part of the installer
+        """
+        self._run_pkg_manager('conda', ['update', '-y', '--all'])
+
+    def conda_install_download_only(self, *package_specs):
+        """Download a conda package given its specifications.
+        E.g. self.conda_install('numpy==1.9.2', 'lxml')
+        """
+        self._run_pkg_manager('conda', ['install', '-y', '--download-only'], *package_specs)
+
+    def package_name(self, package_filename):
+        """Return the bit of a filename before the version number starts
+        """
+        return re.match(r"(.*)-\d.*", package_filename).group(1)
+
+    def channel_arch(self):
+        """return the conda channel architecture required for this build
+        """
+        if sys.platform == 'win32':
+            if self.bitness == '64bit':
+                return 'win-64'
+            else:
+                return 'win-32'
+        elif sys.platform == 'darwin':
+            return 'osx-64'
+        else:
+            return 'linux-64'
+
+    def conda_index(self, channel):
+        """index the conda channel directory, uses a repo of magic fixes
+        as discussed in https://ccdc-cambridge.slack.com/archives/C1JRZPULU/p1576008379426900
+        """
+        import pathlib
+        patch_file = os.path.join( pathlib.Path(__file__).parent.absolute(), 'repodata-hotfixes/main.py')
+        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
+
+    def copy_packages(self):
+        """Copy packages from the miniconda install to the final installer location
+        """
+        conda_package_dest = os.path.join(self.output_conda_offline_channel, self.channel_arch())
+        os.makedirs(conda_package_dest)
+
+        known_packages = set()
+
+        for conda_package in glob.glob(self.conda_bz2_src_packages):
+            filename = os.path.basename(conda_package)
+            known_packages.add(self.package_name(filename))
+            shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
+        for conda_package in glob.glob(self.conda_conda_src_packages):
+            filename = os.path.basename(conda_package)
+            known_packages.add(self.package_name(filename))
+            shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
+
+    windows_install_script = """@echo off
+if x%~s1==x (
+  echo "install target_dir [ccdc_packages_and_package_name_pairs...]"
+  goto end
+)
+setlocal
+set installer_dir=%~dps0
+start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
+call %~s1\\Scripts\\activate
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
+shift
+:next_package
+if not "%1" == "" (
+    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels %2
+    shift
+    shift
+    goto next_package
+)
+endlocal
+:end
+"""
+
+    unix_install_script = """#!/bin/sh
+if test $# -eq 0 ; then
+    echo 'install target_dir [ccdc_packages_and_package_name_pairs...]'
+    exit 1
+fi
+INSTALLER_DIR=$(dirname -- "$0")
+chmod +x $INSTALLER_DIR/{{ installer_exe }}
+$INSTALLER_DIR/{{ installer_exe }} -b -p $1
+unset PYTHONPATH
+unset PYTHONHOME
+. $1/bin/activate ""
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+shift
+while test $# -gt 1
+do
+    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels $2
+    shift
+    shift
+done
+"""
+
+    def write_install_script(self):
+        installer_dir, installer_exe = os.path.split(self.output_installer)
+        install_name = os.path.join(installer_dir, "install.{0}".format("bat" if sys.platform == 'win32' else "sh" ))
+        if sys.platform == 'win32':
+            script = self.windows_install_script
+        else:
+            script = self.unix_install_script
+        script = script.replace('{{ installer_exe }}', installer_exe)
+        script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
+        with open(install_name, "w") as f:
+            f.write(script)
+        if sys.platform != 'win32':
+            os.chmod(install_name, 0o755)
 
     def pin_python_version(self):
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
@@ -333,179 +483,6 @@ class AnacondaMixin(object):
             if os.path.exists(os.path.expanduser(path)):
                 print('Conda configuration found in %s. This might affect installation of packages' % path)
 
-class MinicondaOfflineInstaller(AnacondaMixin):
-
-    def __init__(self):
-        self.distribution = 'Miniconda'
-        self.output_installer = os.path.join(self.output_dir, self.installer_name)
-        self.conda_bz2_src_packages = os.path.join(self.build_install_dir, 'pkgs', '*.bz2')
-        self.conda_conda_src_packages = os.path.join(self.build_install_dir, 'pkgs', '*.conda')
-
-    @property
-    def name(self):
-        return 'miniconda3'
-
-    @property
-    def build_install_dir(self):
-        return 'build_temp'
-
-    @property
-    def artefact_id(self):
-        return self.name + '-' + miniconda_installer_version() + '-' + build_id() + '-' + build_osname()
-    
-    @property
-    def output_dir(self):
-        return os.path.join('output', self.artefact_id)
-
-    @property
-    def output_conda_offline_channel(self):
-        return os.path.join(self.output_dir, 'conda_offline_channel')
-
-    def get_source_packages_from_mirror(self):
-        installer_url='https://repo.continuum.io/miniconda/%s' % self.installer_name
-        print("Get %s -> %s" % (installer_url, self.output_installer))
-        r = requests.get(installer_url)
-        with open(self.output_installer, 'wb') as fd:
-            for chunk in r.iter_content(chunk_size=128):
-                fd.write(chunk)
-
-    def clean_build_and_output(self):
-        try:
-            shutil.rmtree(self.output_dir)
-        except:
-            pass
-        try:
-            shutil.rmtree(self.build_install_dir)
-        except:
-            pass
-
-    def base_conda_packages(self):
-        raise NotImplemented()
-
-    def conda_cleanup(self, *package_specs):
-        """Remove package archives
-        """
-        self._run_pkg_manager('conda', ['clean', '-y', '--all'])
-
-    def conda_update(self, *package_specs):
-        """Remove package archives
-        """
-        self._run_pkg_manager('conda', ['update', '-y', '--all'])
-
-    def conda_install_download_only(self, *package_specs):
-        """Install a conda package given its specifications.
-        E.g. self.conda_install('numpy==1.9.2', 'lxml')
-        """
-        self._run_pkg_manager('conda', ['install', '-y', '--download-only'], *package_specs)
-
-    def package_name(self, package_filename):
-        """Return the bit of a filename before the version number starts
-        """
-        return re.match(r"(.*)-\d.*", package_filename).group(1)
-
-    def channel_arch(self):
-        """return the conda channel architecture required for this build
-        """
-        if sys.platform == 'win32':
-            if self.bitness == '64bit':
-                return 'win-64'
-            else:
-                return 'win-32'
-        elif sys.platform == 'darwin':
-            return 'osx-64'
-        else:
-            return 'linux-64'
-
-    def conda_index(self, channel):
-        """index the conda channel directory
-        """
-        import pathlib
-        patch_file = os.path.join( pathlib.Path(__file__).parent.absolute(), 'repodata-hotfixes/main.py')
-        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
-
-    def copy_packages(self):
-        """Copy packages from the miniconda install to the final installer location
-           The copied packages are:
-           Any conda packages which are newly downloaded.
-        """
-        conda_package_dest = os.path.join(self.output_conda_offline_channel, self.channel_arch())
-        os.makedirs(conda_package_dest)
-
-        known_packages = set()
-
-        for conda_package in glob.glob(self.conda_bz2_src_packages):
-            filename = os.path.basename(conda_package)
-            known_packages.add(self.package_name(filename))
-            shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
-        for conda_package in glob.glob(self.conda_conda_src_packages):
-            filename = os.path.basename(conda_package)
-            known_packages.add(self.package_name(filename))
-            shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
-
-    def index_offline_channel(self):
-        try:
-            AnacondaMixin.conda_install(self, 'conda-build')
-        except:
-            pass # sorry, this reports an exception in miniconda2, but conda-build seems to be installed ok
-        self.conda_index(self.output_conda_offline_channel)
-
-    windows_install_script = """@echo off
-if x%~s1==x (
-  echo "install target_dir [ccdc_packages_and_package_name_pairs...]"
-  goto end
-)
-setlocal
-set installer_dir=%~dps0
-start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
-call %~s1\\Scripts\\activate
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
-shift
-:next_package
-if not "%1" == "" (
-    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels %2
-    shift
-    shift
-    goto next_package
-)
-endlocal
-:end
-"""
-
-    unix_install_script = """#!/bin/sh
-if test $# -eq 0 ; then
-    echo 'install target_dir [ccdc_packages_and_package_name_pairs...]'
-    exit 1
-fi
-INSTALLER_DIR=$(dirname -- "$0")
-chmod +x $INSTALLER_DIR/{{ installer_exe }}
-$INSTALLER_DIR/{{ installer_exe }} -b -p $1
-unset PYTHONPATH
-unset PYTHONHOME
-. $1/bin/activate ""
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
-shift
-while test $# -gt 1
-do
-    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels $2
-    shift
-    shift
-done
-"""
-
-    def write_install_script(self):
-        installer_dir, installer_exe = os.path.split(self.output_installer)
-        install_name = os.path.join(installer_dir, "install.{0}".format("bat" if sys.platform == 'win32' else "sh" ))
-        if sys.platform == 'win32':
-            script = self.windows_install_script
-        else:
-            script = self.unix_install_script
-        script = script.replace('{{ installer_exe }}', installer_exe)
-        script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
-        with open(install_name, "w") as f:
-            f.write(script)
-        if sys.platform != 'win32':
-            os.chmod(install_name, 0o755)
-
     def build(self):
         print('Cleaning up build and output directories')
         self.clean_build_and_output()
@@ -536,8 +513,11 @@ done
         print('Copy packages to output directory')
         self.copy_packages()
 
+        print('Install conda-build in order to index the offline channel')
+        self.conda_install('conda-build')
+
         print('Create index of offline channel')
-        self.index_offline_channel()
+        self.conda_index(self.output_conda_offline_channel)
 
         print('Create install script')
         self.write_install_script()

@@ -12,12 +12,16 @@ A project to create offline miniconda installers for use by the CSD System insta
 
 ## Changing the list of packages
 
-- increase the MinicondaOfflineInstaller.ccdc_version variable as the output will be different
-- change the base_conda_packages list in the MinicondaOfflineInstaller class
+- change the required_offline_conda_packages method
 - run create_offline_installer.py
+- push
 - joy
 
 ## Changing the miniconda version
 
-- change the MinicondaOfflineInstaller.version variable
-- reset the MinicondaOfflineInstaller.ccdc_version variable to '-1'
+- change the default version in the miniconda_installer_version method
+- test locally
+- push
+- edit the conda-offline-repository-creation pipeline, select variables and update the miniconda_installer_version variable to match the new version
+- wait for the build
+- joy

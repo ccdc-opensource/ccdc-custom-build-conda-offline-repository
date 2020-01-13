@@ -12,9 +12,48 @@ import sys
 import tempfile
 import re
 
+# Pass the required miniconda installer version from devops pipelines variables
+def miniconda_installer_version():
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', '4.7.12.1')
+
+def required_offline_conda_packages():
+    # these are the packages that we recommend for using the API
+    # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
+    api_pkgs = [
+        'Pillow',
+        'six',
+        'lxml',
+        'numpy',
+        'matplotlib',
+        'pytest',
+    ]
+    # these packages are required by other scripts that we distribute
+    script_pkgs = [
+        'docxtpl', # reports
+        'pockets',
+        'docutils',
+        'pygments',
+        'sphinx',
+        'pandas', # solvate prediction
+        'py-xgboost', # solvate prediction
+    ]
+    return api_pkgs + script_pkgs
+
+# Pass the build id from devops pipelines variables
+# Make sure the resulting artefact is clearly labeled if produced on a developer machine
+def build_id():
+    return os.environ.get('BUILD_BUILDID', 'DEVELOPER_VERSION')
+
+# Pass the operating system name from devops pipelines variables
+# Make sure the resulting artefact is clearly labeled if produced on a developer machine
+def build_osname():
+    return os.environ.get('BUILDOSNAME', 'for_my_developer_os')
+
+
 IS_WINDOWS = sys.platform == 'win32'
 
 if IS_WINDOWS:
+    # Add functionality to restore the environment after miniconda installer has messed around with it
     import ctypes
     from ctypes import wintypes
     if sys.version_info[0] >= 3:
@@ -196,7 +235,7 @@ class AnacondaMixin(object):
         return '{0}{1}-{2}-{3}-{4}.{5}'.format(
             self.distribution,
             self.conda_python_version,
-            self.version,
+            miniconda_installer_version(),
             AnacondaMixin.platforms[AnacondaMixin.system],
             AnacondaMixin.architectures[self.bitness],
             AnacondaMixin.extensions[AnacondaMixin.system])
@@ -212,12 +251,6 @@ class AnacondaMixin(object):
         with open(pin_file, "w") as pinned:
             pin_string = "python {0}.*\n".format(self.conda_python_version)
             pinned.write(pin_string)
-
-    def run(self):
-        self.check_condarc_presence()
-        self.install_anaconda()
-        self.pin_python_version()
-        self.conda_install(*self.base_conda_packages())
 
     def install_anaconda(self):
         print('Running %s' % self.install_args)
@@ -301,8 +334,6 @@ class AnacondaMixin(object):
                 print('Conda configuration found in %s. This might affect installation of packages' % path)
 
 class MinicondaOfflineInstaller(AnacondaMixin):
-    version = '4.7.12.1'
-    ccdc_version = '-2'
 
     def __init__(self):
         self.distribution = 'Miniconda'
@@ -317,10 +348,14 @@ class MinicondaOfflineInstaller(AnacondaMixin):
     @property
     def build_install_dir(self):
         return 'build_temp'
+
+    @property
+    def artefact_id(self):
+        return self.name + '-' + miniconda_installer_version() + '-' + build_id() + '-' + build_osname()
     
     @property
     def output_dir(self):
-        return os.path.join('output', self.name + '-' + self.version + self.ccdc_version)
+        return os.path.join('output', self.artefact_id)
 
     @property
     def output_conda_offline_channel(self):
@@ -345,11 +380,7 @@ class MinicondaOfflineInstaller(AnacondaMixin):
             pass
 
     def base_conda_packages(self):
-        # these are the packages that we recommend for using the API https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
-        api_pkgs = ['Pillow', 'six', 'lxml', 'numpy', 'matplotlib', 'pytest']
-        # these packages are required by other scripts that we distribute
-        script_pkgs = ['docxtpl', 'pockets', 'docutils', 'pygments', 'sphinx', 'pandas', 'py-xgboost']
-        return api_pkgs + script_pkgs
+        raise NotImplemented()
 
     def conda_cleanup(self, *package_specs):
         """Remove package archives
@@ -361,7 +392,7 @@ class MinicondaOfflineInstaller(AnacondaMixin):
         """
         self._run_pkg_manager('conda', ['update', '-y', '--all'])
 
-    def conda_install(self, *package_specs):
+    def conda_install_download_only(self, *package_specs):
         """Install a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
@@ -469,7 +500,7 @@ done
         else:
             script = self.unix_install_script
         script = script.replace('{{ installer_exe }}', installer_exe)
-        script = script.replace('{{ conda_packages }}', ' '.join(self.base_conda_packages()))
+        script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
         with open(install_name, "w") as f:
             f.write(script)
         if sys.platform != 'win32':
@@ -500,7 +531,7 @@ done
         self.conda_update()
 
         print('Fetch packages')
-        self.conda_install(*self.base_conda_packages())
+        self.conda_install_download_only(*required_offline_conda_packages())
 
         print('Copy packages to output directory')
         self.copy_packages()

@@ -1,0 +1,3 @@
+[submodule "repodata-hotfixes"]
+	path = repodata-hotfixes
+	url = https://github.com/AnacondaRecipes/repodata-hotfixes

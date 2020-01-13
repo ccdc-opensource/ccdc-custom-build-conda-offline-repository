@@ -1,0 +1,22 @@
+# channel locations. These override conda defaults, i.e., conda will
+# search *only* the channels listed here, in the order given.
+# Use "defaults" to automatically include all default channels.
+# Non-url channels will be interpreted as Anaconda.org usernames
+# (this can be changed by modifying the channel_alias key; see below).
+# The default is just 'defaults'.
+
+# order is important, if conda-forge goes on top, the conda solver will
+# download way more packages, including updated qt, the clang compiler etc
+channels:
+  - defaults
+  - conda-forge
+
+# Show channel URLs when displaying what is going to be downloaded
+# and in 'conda list'. The default is False.
+show_channel_urls: True
+
+# Workaround for https://www.jfrog.com/jira/browse/RTFACT-19267
+# was important when downloading conda packages from artifactory
+# it looks though that artifactory doesn't provide proper support for
+# mirroring main (the patches in repodata-hotfixes are not applied)
+#use_only_tar_bz2: true

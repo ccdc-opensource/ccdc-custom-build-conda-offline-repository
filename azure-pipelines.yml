@@ -12,6 +12,11 @@ pool:
   vmImage: $(imageName)
 
 steps:
+- checkout: self
+  submodules: true
+  persistCredentials: false
+  displayName: 'ensure hotfixes repo is checked out'
+
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.8'
@@ -24,6 +29,7 @@ steps:
     scriptSource: 'filePath' # Options: filePath, inline
     scriptPath: create_offline_installer.py
     #arguments: # Optional
+  displayName: 'Create Offline installer'
 
 - task: ArchiveFiles@2
   inputs:

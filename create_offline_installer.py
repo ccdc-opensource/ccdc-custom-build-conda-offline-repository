@@ -262,7 +262,17 @@ class MinicondaOfflineInstaller:
             self.architectures[self.bitness],
             self.extensions[self.system])
 
-    def get_source_packages_from_mirror(self):
+    @property
+    def install_script_filename(self):
+        '''the miniconda installer script used by the CSD installer'''
+        return "install.{0}".format("bat" if sys.platform == 'win32' else "sh" )
+
+    @property
+    def install_script_path(self):
+        '''local path to the miniconda installer script'''
+        return os.path.join(self.output_dir, self.install_script_filename)
+
+    def fetch_miniconda_installer(self):
         installer_url='https://repo.continuum.io/miniconda/%s' % self.installer_name
         print("Get %s -> %s" % (installer_url, self.output_installer))
         r = requests.get(installer_url)
@@ -373,36 +383,48 @@ unset PYTHONPATH
 unset PYTHONHOME
 . $1/bin/activate ""
 conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
 shift
 while test $# -gt 1
 do
     conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels $2
+    [ $? -eq 0 ] || exit $?; # exit if non-zero return code
     shift
     shift
 done
 """
 
     def write_install_script(self):
-        installer_dir, installer_exe = os.path.split(self.output_installer)
-        install_name = os.path.join(installer_dir, "install.{0}".format("bat" if sys.platform == 'win32' else "sh" ))
         if sys.platform == 'win32':
             script = self.windows_install_script
         else:
             script = self.unix_install_script
-        script = script.replace('{{ installer_exe }}', installer_exe)
+        script = script.replace('{{ installer_exe }}', self.installer_name)
         script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
-        with open(install_name, "w") as f:
+        with open(self.install_script_path, "w") as f:
             f.write(script)
         if sys.platform != 'win32':
-            os.chmod(install_name, 0o755)
+            os.chmod(self.install_script_path, 0o755)
 
-    def pin_python_version(self):
+    def test_install_script(self):
+        '''Run the install script on a temporary directory'''
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            args = [
+                os.path.abspath(self.install_script_path),
+                os.path.join(tmpdirname, 'miniconda')
+            ]
+            print(args)
+            print(self.output_dir)
+            subprocess.check_call(args, cwd=self.output_dir)
+            print('Finished install successfully')
+
+    def pin_python_version(self, python_version):
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
         with open(pin_file, "w") as pinned:
-            pin_string = "python {0}.*\n".format(self.conda_python_version)
+            pin_string = "python {0}\n".format(python_version)
             pinned.write(pin_string)
 
-    def install_anaconda(self):
+    def install_miniconda(self):
         print('Running %s' % self.install_args)
         outcome = subprocess.call(self.install_args)
 
@@ -484,22 +506,26 @@ done
                 print('Conda configuration found in %s. This might affect installation of packages' % path)
 
     def build(self):
+        #print('Test install script')
+        #self.test_install_script()
+        #sys.exit()
+
         print('Cleaning up build and output directories')
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
 
         print('Getting installer')
-        self.get_source_packages_from_mirror()
+        self.fetch_miniconda_installer()
 
         print('Check there are no condarc files around')
         self.check_condarc_presence()
 
-        print('Install anaconda in the build directory')
-        self.install_anaconda()
+        print('Install miniconda in the build directory')
+        self.install_miniconda()
 
-        print('Pin python version')
-        self.pin_python_version()
+        print('Pin python version in the installed conda environment')
+        self.pin_python_version('3.*')
 
         print('Remove conda packages that were part of the installer')
         self.conda_cleanup()
@@ -521,6 +547,9 @@ done
 
         print('Create install script')
         self.write_install_script()
+
+        print('Test install script')
+        self.test_install_script()
 
 if __name__ == '__main__':
     MinicondaOfflineInstaller().build()

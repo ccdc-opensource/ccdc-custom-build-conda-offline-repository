@@ -240,7 +240,7 @@ class AnacondaMixin(object):
                             self.output_installer,
                             '-b',     # run install in batch mode (without manual intervention)
                             '-f',     # no error if install prefix already exists
-                            '-p', + os.path.abspath(self.build_install_dir)]
+                            '-p', os.path.abspath(self.build_install_dir)]
         return install_args
 
     def _clean_up_system_path(self):

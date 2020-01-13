@@ -5,11 +5,17 @@
 # (this can be changed by modifying the channel_alias key; see below).
 # The default is just 'defaults'.
 
-# order is important, if conda-forge goes on top, the conda solver will
+# According to this page, strict channel priority is required
+# and conda-forge must be on top, as order is important
+# https://conda-forge.org/docs/user/introduction.html
+# when conda-forge is on top, the conda solver will
 # download way more packages, including updated qt, the clang compiler etc
+# but this seems to be the only way to make solving work on all platforms
+channel_priority: strict
+
 channels:
-  - defaults
   - conda-forge
+  - defaults
 
 # Show channel URLs when displaying what is going to be downloaded
 # and in 'conda list'. The default is False.

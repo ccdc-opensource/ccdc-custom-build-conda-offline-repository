@@ -37,6 +37,7 @@ steps:
 - task: ArchiveFiles@2
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).zip' 
 
 - task: PublishBuildArtifacts@1
   inputs:

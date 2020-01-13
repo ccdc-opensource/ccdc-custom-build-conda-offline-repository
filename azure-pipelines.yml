@@ -3,10 +3,13 @@ strategy:
   matrix:
     linux:
       imageName: 'ubuntu-16.04'
+      buildosname: 'linux'
     mac:
       imageName: 'macos-10.13'
+      buildosname: 'macos'
     windows:
       imageName: 'vs2017-win2016'
+      buildosname: 'windows'
 
 pool:
   vmImage: $(imageName)
@@ -33,7 +36,10 @@ steps:
 
 - task: ArchiveFiles@2
   inputs:
-    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output'
-    includeRootFolder: false
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
 
 - task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'miniconda-offline-installer'
+    publishLocation: 'Container'

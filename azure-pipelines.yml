@@ -4,12 +4,18 @@ strategy:
     linux:
       imageName: 'ubuntu-16.04'
       buildosname: 'linux'
+      outputArchiveType: 'tar'
+      outputArchiveExtension: 'tar.gz'
     mac:
       imageName: 'macos-10.13'
       buildosname: 'macos'
+      outputArchiveType: 'tar'
+      outputArchiveExtension: 'tar.gz'
     windows:
       imageName: 'vs2017-win2016'
       buildosname: 'windows'
+      outputArchiveType: 'zip'
+      outputArchiveExtension: 'zip'
 
 pool:
   vmImage: $(imageName)
@@ -37,7 +43,8 @@ steps:
 - task: ArchiveFiles@2
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).zip' 
+    archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)' 
+    archiveType: '$(outputArchiveType)'
 
 - task: PublishBuildArtifacts@1
   inputs:

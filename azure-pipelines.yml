@@ -7,7 +7,7 @@ strategy:
       outputArchiveType: 'tar'
       outputArchiveExtension: 'tar.gz'
     mac:
-      imageName: 'macos-10.13'
+      imageName: 'macos-10.14'
       buildosname: 'macos'
       outputArchiveType: 'tar'
       outputArchiveExtension: 'tar.gz'

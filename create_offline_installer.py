@@ -20,20 +20,11 @@ def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
     api_pkgs = [
-        'Pillow',
-        'six',
-        'lxml',
-        'matplotlib',
-        'pytest',
+
     ]
     # these packages are required by other scripts that we distribute
     script_pkgs = [
-        'docxtpl', # reports
-        'pockets',
-        'docutils',
-        'pygments',
-        'sphinx',
-        'pandas', # solvate prediction
+
         'tensorflow=1.15.0' #aromatic analyser
     ]
     return api_pkgs + script_pkgs

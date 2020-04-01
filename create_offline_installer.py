@@ -462,6 +462,10 @@ done
         self._run_pkg_manager('conda', ['install', '-y'], *package_specs)
 
     def _run_pkg_manager(self, pkg_manager_name, extra_args, *package_specs):
+
+        if list(package_specs) == []:
+            return
+            
         my_env = os.environ.copy()
         # Set the condarc to the channels we want
         my_env["CONDARC"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'condarc-for-offline-installer-creation')

@@ -27,7 +27,8 @@ def required_offline_conda_packages():
 
         'tensorflow=1.15.0' #aromatic analyser
     ]
-    return api_pkgs + script_pkgs
+    return []
+    #return api_pkgs + script_pkgs
 
 # Pass the build id from devops pipelines variables
 # Make sure the resulting artefact is clearly labeled if produced on a developer machine

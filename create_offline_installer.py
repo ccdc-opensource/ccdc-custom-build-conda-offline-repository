@@ -36,7 +36,7 @@ def required_offline_conda_packages():
         'sphinx',
         'pandas', # solvate prediction
         'py-xgboost', # solvate prediction
-        'tensorflow=1.13.1', # aromatics analyser
+        'tensorflow=1.14.0', # aromatics analyser
     ]
     return api_pkgs + script_pkgs
 

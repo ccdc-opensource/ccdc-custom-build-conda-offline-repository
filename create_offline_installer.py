@@ -29,6 +29,7 @@ def required_offline_conda_packages():
     ]
     # these packages are required by other scripts that we distribute
     script_pkgs = [
+        'tensorflow<2', # aromatics analyser
         'docxtpl', # reports
         'pockets',
         'docutils',
@@ -36,7 +37,7 @@ def required_offline_conda_packages():
         'sphinx',
         'pandas', # solvate prediction
         'py-xgboost', # solvate prediction
-        'tensorflow=1.14.0', # aromatics analyser
+        'qt=5.12'
     ]
     return api_pkgs + script_pkgs
 

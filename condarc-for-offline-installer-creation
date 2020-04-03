@@ -11,7 +11,7 @@
 # when conda-forge is on top, the conda solver will
 # download way more packages, including updated qt, the clang compiler etc
 # but this seems to be the only way to make solving work on all platforms
-# channel_priority: strict
+channel_priority: flexible
 
 channels:
   - defaults

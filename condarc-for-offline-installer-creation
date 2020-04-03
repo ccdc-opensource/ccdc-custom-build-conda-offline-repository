@@ -14,7 +14,7 @@
 channel_priority: strict
 
 channels:
-#  - conda-forge
+  - conda-forge
   - defaults
 
 # Show channel URLs when displaying what is going to be downloaded

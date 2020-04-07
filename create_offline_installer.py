@@ -39,7 +39,8 @@ def required_offline_conda_packages():
         'pockets',
         'qt=5.12'
     ]
-    return api_pkgs + script_pkgs
+    return ['py-xgboost', 'tensorflow=1.15.0']
+    #return api_pkgs + script_pkgs
 
 # Pass the build id from devops pipelines variables
 # Make sure the resulting artefact is clearly labeled if produced on a developer machine

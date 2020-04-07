@@ -11,11 +11,11 @@
 # when conda-forge is on top, the conda solver will
 # download way more packages, including updated qt, the clang compiler etc
 # but this seems to be the only way to make solving work on all platforms
-channel_priority: flexible
+#channel_priority: flexible
 
-channels:
-  - defaults
-  - conda-forge
+#channels:
+#  - defaults
+#  - conda-forge
   
 # Show channel URLs when displaying what is going to be downloaded
 # and in 'conda list'. The default is False.

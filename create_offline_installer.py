@@ -481,7 +481,7 @@ done
         args = [self._args_for(pkg_manager_name)] + extra_args + list(package_specs)
         process = subprocess.run(args, env=my_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print(process.stdout)
-        if process.return_code != 0:
+        if process.returncode != 0:
             print('_run_pkg_manager fail info')
             print(args)
             print(my_env)

@@ -479,7 +479,7 @@ done
         if IS_WINDOWS:
             my_env['PATH'] = "%s;%s" % (os.path.join(self.build_install_dir, 'Library', 'bin'), my_env['PATH'])
         args = [self._args_for(pkg_manager_name)] + extra_args + list(package_specs)
-        outcome = subprocess.call(args, env=my_env)
+        outcome = subprocess.run(args, env=my_env, stdout=PIPE, stderr=STDOUT)
         if outcome != 0:
             print('_run_pkg_manager fail info')
             print(args)

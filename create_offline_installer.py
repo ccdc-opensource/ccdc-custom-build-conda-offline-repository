@@ -352,7 +352,7 @@ class MinicondaOfflineInstaller:
             shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
         
         print(f'Packages in {conda_package_dest}')
-        for p in os.listdir(conda_package_dest):
+        for p in sorted(os.listdir(conda_package_dest)):
             print(f'  - {p}')
 
     windows_install_script = """@echo off

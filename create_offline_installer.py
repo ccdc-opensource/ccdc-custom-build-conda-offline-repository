@@ -331,8 +331,8 @@ class MinicondaOfflineInstaller:
         """
         import pathlib
         patch_file = os.path.join( pathlib.Path(__file__).parent.absolute(), 'repodata-hotfixes/main.py')
-        self._run_pkg_manager('conda', ['index', channel])
-#        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
+#        self._run_pkg_manager('conda', ['index', channel])
+        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
 
     def copy_packages(self):
         """Copy packages from the miniconda install to the final installer location

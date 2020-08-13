@@ -364,6 +364,11 @@ setlocal
 set installer_dir=%~dps0
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
 call %~s1\\Scripts\\activate
+echo "updating conda"
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
+echo "updating all packages"
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
+echo "installing required packages"
 call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
 shift
 :next_package
@@ -388,6 +393,13 @@ $INSTALLER_DIR/{{ installer_exe }} -b -p $1
 unset PYTHONPATH
 unset PYTHONHOME
 . $1/bin/activate ""
+echo 'Updating conda'
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo 'Updating all packages'
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo 'Installing required packages'
 conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 shift

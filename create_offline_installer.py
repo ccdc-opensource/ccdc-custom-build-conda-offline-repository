@@ -14,7 +14,7 @@ import re
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', '4.7.12.1')
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.8.3')
 
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API

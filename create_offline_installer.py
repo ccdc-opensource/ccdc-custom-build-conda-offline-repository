@@ -368,8 +368,16 @@ echo "updating conda"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
 echo "updating all packages"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
-echo "installing required packages"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
+rem echo "installing required packages"
+rem call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
+echo "installing required packages 1"
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels Pillow six lxml numpy matplotlib pytest
+echo "installing required packages 2"
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels docxtpl pockets docutils pygments sphinx
+echo "installing required packages 3"
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels pandas
+echo "installing required packages 4"
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels py-xgboost
 shift
 :next_package
 if not "%1" == "" (
@@ -399,9 +407,22 @@ conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --ove
 echo 'Updating all packages'
 conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo 'Installing required packages'
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+#echo 'Installing required packages'
+#conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+#[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo "installing required packages 1"
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels Pillow six lxml numpy matplotlib pytest
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo "installing required packages 2"
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels docxtpl pockets docutils pygments sphinx
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo "installing required packages 3"
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels pandas
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo "installing required packages 4"
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels py-xgboost
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+
 shift
 while test $# -gt 1
 do

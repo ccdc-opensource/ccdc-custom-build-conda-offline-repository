@@ -9,6 +9,7 @@ import requests
 import shutil
 import subprocess
 import sys
+import time
 import tempfile
 import re
 
@@ -511,46 +512,72 @@ done
         #self.test_install_script()
         #sys.exit()
 
-        print('Cleaning up build and output directories')
+        print('##[group]Cleaning up build and output directories', flush=True))
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Getting installer')
+        print('##[group]Getting installer', flush=True))
         self.fetch_miniconda_installer()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Check there are no condarc files around')
+        print('##[group]Check there are no condarc files around', flush=True))
         self.check_condarc_presence()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Install miniconda in the build directory')
+        print('##[group]Install miniconda in the build directory', flush=True))
         self.install_miniconda()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Pin python version in the installed conda environment')
+        print('##[group]Pin python version in the installed conda environment', flush=True))
         self.pin_python_version('3.*')
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Remove conda packages that were part of the installer')
+        print('##[group]Remove conda packages that were part of the installer', flush=True))
         self.conda_cleanup()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Download updates so that we can distribute them consistently')
+        print('##[group]Download updates so that we can distribute them consistently', flush=True))
         self.conda_update()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Fetch packages')
+        print('##[group]Fetch packages', flush=True))
         self.conda_install_download_only(*required_offline_conda_packages())
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Copy packages to output directory')
+        print('##[group]Copy packages to output directory', flush=True))
         self.copy_packages()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Install conda-build in order to index the offline channel')
+        print('##[group]Install conda-build in order to index the offline channel', flush=True))
         self.conda_install('conda-build')
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Create index of offline channel')
+        print('##[group]Create index of offline channel', flush=True))
         self.conda_index(self.output_conda_offline_channel)
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Create install script')
+        print('##[group]Create install script', flush=True))
         self.write_install_script()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Test install script')
+        print('##[group]Test install script', flush=True))
         self.test_install_script()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
 if __name__ == '__main__':
     MinicondaOfflineInstaller().build()

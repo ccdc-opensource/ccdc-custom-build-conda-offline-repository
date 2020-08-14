@@ -38,6 +38,8 @@ def required_offline_conda_packages():
         'sphinx',
         'pandas', # solvate prediction
         'py-xgboost', # solvate prediction
+        'scikit-learn', # aromatic analyser
+        'tensorflow>2.0', # aromatic analyser
     ]
     return api_pkgs + script_pkgs
 
@@ -577,10 +579,10 @@ done
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print('##[group]Download updates so that we can distribute them consistently', flush=True)
-        self.conda_update()
-        time.sleep(0.5)
-        print('##[endgroup]')
+        # print('##[group]Download updates so that we can distribute them consistently', flush=True)
+        # self.conda_update()
+        # time.sleep(0.5)
+        # print('##[endgroup]')
 
         print('##[group]Copy packages to output directory', flush=True)
         self.copy_packages()

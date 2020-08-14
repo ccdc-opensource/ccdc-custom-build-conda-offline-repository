@@ -12,6 +12,7 @@ import sys
 import time
 import tempfile
 import re
+import pathlib
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
@@ -328,11 +329,21 @@ class MinicondaOfflineInstaller:
     def conda_index(self, channel):
         """index the conda channel directory, uses a repo of magic fixes
         as discussed in https://ccdc-cambridge.slack.com/archives/C1JRZPULU/p1576008379426900
+        Also comments out the addition of _libgcc_mutex from main as we only use conda-forge on linux
         """
-        import pathlib
         patch_file = os.path.join( pathlib.Path(__file__).parent.absolute(), 'repodata-hotfixes/main.py')
-#        self._run_pkg_manager('conda', ['index', channel])
-        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
+        updated_patch_file = os.path.join( self.build_install_dir , 'repo-patch.py')
+        with open(patch_file) as f:
+            s = f.read()
+
+        if sys.platform.startswith('linux'):
+            s = s.replace("if name == 'libgcc-ng':", "# if name == 'libgcc-ng':")
+            s = s.replace("depends.append('_libgcc_mutex * main')", "# depends.append('_libgcc_mutex * main')")
+
+        with open(updated_patch_file, 'w') as f:
+            f.write(s)
+
+        self._run_pkg_manager('conda', ['index', '-p', updated_patch_file, channel])
 
     def copy_packages(self):
         """Copy packages from the miniconda install to the final installer location
@@ -364,20 +375,12 @@ setlocal
 set installer_dir=%~dps0
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
 call %~s1\\Scripts\\activate
-echo "updating conda"
+echo "CCDC Miniconda installer: updating conda"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
-echo "updating all packages"
+echo "CCDC Miniconda installer: updating all packages"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
-rem echo "installing required packages"
-rem call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
-echo "installing required packages 1"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels Pillow six lxml numpy matplotlib pytest
-echo "installing required packages 2"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels docxtpl pockets docutils pygments sphinx
-echo "installing required packages 3"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels pandas
-echo "installing required packages 4"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels py-xgboost
+echo "CCDC Miniconda installer: installing required packages"
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
 shift
 :next_package
 if not "%1" == "" (
@@ -401,26 +404,14 @@ $INSTALLER_DIR/{{ installer_exe }} -b -p $1
 unset PYTHONPATH
 unset PYTHONHOME
 . $1/bin/activate ""
-echo 'Updating conda'
+echo 'CCDC Miniconda installer: Updating conda'
 conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo 'Updating all packages'
+echo 'CCDC Miniconda installer: Updating all packages'
 conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
-#echo 'Installing required packages'
-#conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
-#[ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo "installing required packages 1"
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels Pillow six lxml numpy matplotlib pytest
-[ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo "installing required packages 2"
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels docxtpl pockets docutils pygments sphinx
-[ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo "installing required packages 3"
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels pandas
-[ $? -eq 0 ] || exit $?; # exit if non-zero return code
-echo "installing required packages 4"
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels py-xgboost
+echo 'CCDC Miniconda installer: Installing required packages'
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 
 shift

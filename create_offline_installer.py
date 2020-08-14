@@ -429,8 +429,8 @@ done
             script = self.windows_install_script
         else:
             script = self.unix_install_script
-        script = script.replace('{{ installer_exe }}', self.installer_name)
-        script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
+        script = script.replace('{{ installer_exe }}', '"'+self.installer_name+'"')
+        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages()]))
         with open(self.install_script_path, "w") as f:
             f.write(script)
         if sys.platform != 'win32':

@@ -572,13 +572,13 @@ done
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print('##[group]Download updates so that we can distribute them consistently', flush=True)
-        self.conda_update()
+        print('##[group]Fetch packages', flush=True)
+        self.conda_install(*required_offline_conda_packages())
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print('##[group]Fetch packages', flush=True)
-        self.conda_install_download_only(*required_offline_conda_packages())
+        print('##[group]Download updates so that we can distribute them consistently', flush=True)
+        self.conda_update()
         time.sleep(0.5)
         print('##[endgroup]')
 

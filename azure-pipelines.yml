@@ -20,20 +20,15 @@ strategy:
 pool:
   vmImage: $(imageName)
 
-${{ if eq(variables['imageName'], 'ubuntu-latest') }}:
-  # We use a container to run the build as to make this as close to the supported platform
-  container: rockdreamer/centos7-gcc9:latest
-
 steps:
 - checkout: self
   submodules: true
   persistCredentials: false
   displayName: 'ensure hotfixes repo is checked out'
-
-- ${{ if not(eq(variables['imageName'], 'ubuntu-latest')) }}:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.8'
+  
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.8'
 
 - script: pip install -r requirements.txt
   displayName: 'Install requirements'

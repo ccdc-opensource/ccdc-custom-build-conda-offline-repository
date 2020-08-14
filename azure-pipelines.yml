@@ -2,7 +2,7 @@
 strategy:
   matrix:
     linux:
-      imageName: 'ubuntu-16.04'
+      imageName: 'ubuntu-latest'
       buildosname: 'linux'
       outputArchiveType: 'tar'
       outputArchiveExtension: 'tar.gz'
@@ -25,7 +25,7 @@ steps:
   submodules: true
   persistCredentials: false
   displayName: 'ensure hotfixes repo is checked out'
-
+  
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.8'

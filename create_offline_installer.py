@@ -9,12 +9,14 @@ import requests
 import shutil
 import subprocess
 import sys
+import time
 import tempfile
 import re
+import pathlib
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', '4.7.12.1')
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.8.3')
 
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
@@ -327,11 +329,21 @@ class MinicondaOfflineInstaller:
     def conda_index(self, channel):
         """index the conda channel directory, uses a repo of magic fixes
         as discussed in https://ccdc-cambridge.slack.com/archives/C1JRZPULU/p1576008379426900
+        Also comments out the addition of _libgcc_mutex from main as we only use conda-forge on linux
         """
-        import pathlib
         patch_file = os.path.join( pathlib.Path(__file__).parent.absolute(), 'repodata-hotfixes/main.py')
-        self._run_pkg_manager('conda', ['index', channel])
-#        self._run_pkg_manager('conda', ['index', '-p', patch_file, channel])
+        updated_patch_file = os.path.join( self.build_install_dir , 'repo-patch.py')
+        with open(patch_file) as f:
+            s = f.read()
+
+        if sys.platform.startswith('linux'):
+            s = s.replace("if name == 'libgcc-ng':", "# if name == 'libgcc-ng':")
+            s = s.replace("depends.append('_libgcc_mutex * main')", "# depends.append('_libgcc_mutex * main')")
+
+        with open(updated_patch_file, 'w') as f:
+            f.write(s)
+
+        self._run_pkg_manager('conda', ['index', '-p', updated_patch_file, channel])
 
     def copy_packages(self):
         """Copy packages from the miniconda install to the final installer location
@@ -349,6 +361,10 @@ class MinicondaOfflineInstaller:
             filename = os.path.basename(conda_package)
             known_packages.add(self.package_name(filename))
             shutil.copyfile(conda_package, os.path.join(conda_package_dest, filename))
+        
+        print(f'Packages in {conda_package_dest}')
+        for p in sorted(os.listdir(conda_package_dest)):
+            print(f'  - {p}')
 
     windows_install_script = """@echo off
 if x%~s1==x (
@@ -359,6 +375,11 @@ setlocal
 set installer_dir=%~dps0
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
 call %~s1\\Scripts\\activate
+echo "CCDC Miniconda installer: updating conda"
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
+echo "CCDC Miniconda installer: updating all packages"
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
+echo "CCDC Miniconda installer: installing required packages"
 call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
 shift
 :next_package
@@ -383,8 +404,16 @@ $INSTALLER_DIR/{{ installer_exe }} -b -p $1
 unset PYTHONPATH
 unset PYTHONHOME
 . $1/bin/activate ""
+echo 'CCDC Miniconda installer: Updating conda'
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo 'CCDC Miniconda installer: Updating all packages'
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
+[ $? -eq 0 ] || exit $?; # exit if non-zero return code
+echo 'CCDC Miniconda installer: Installing required packages'
 conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
+
 shift
 while test $# -gt 1
 do
@@ -400,8 +429,8 @@ done
             script = self.windows_install_script
         else:
             script = self.unix_install_script
-        script = script.replace('{{ installer_exe }}', self.installer_name)
-        script = script.replace('{{ conda_packages }}', ' '.join(required_offline_conda_packages()))
+        script = script.replace('{{ installer_exe }}', '"'+self.installer_name+'"')
+        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages()]))
         with open(self.install_script_path, "w") as f:
             f.write(script)
         if sys.platform != 'win32':
@@ -511,46 +540,72 @@ done
         #self.test_install_script()
         #sys.exit()
 
-        print('Cleaning up build and output directories')
+        print('##[group]Cleaning up build and output directories', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Getting installer')
+        print('##[group]Getting installer', flush=True)
         self.fetch_miniconda_installer()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Check there are no condarc files around')
+        print('##[group]Check there are no condarc files around', flush=True)
         self.check_condarc_presence()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Install miniconda in the build directory')
+        print('##[group]Install miniconda in the build directory', flush=True)
         self.install_miniconda()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Pin python version in the installed conda environment')
+        print('##[group]Pin python version in the installed conda environment', flush=True)
         self.pin_python_version('3.*')
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Remove conda packages that were part of the installer')
+        print('##[group]Remove conda packages that were part of the installer', flush=True)
         self.conda_cleanup()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Download updates so that we can distribute them consistently')
+        print('##[group]Fetch packages', flush=True)
+        self.conda_install(*required_offline_conda_packages())
+        time.sleep(0.5)
+        print('##[endgroup]')
+
+        print('##[group]Download updates so that we can distribute them consistently', flush=True)
         self.conda_update()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Fetch packages')
-        self.conda_install_download_only(*required_offline_conda_packages())
-
-        print('Copy packages to output directory')
+        print('##[group]Copy packages to output directory', flush=True)
         self.copy_packages()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Install conda-build in order to index the offline channel')
+        print('##[group]Install conda-build in order to index the offline channel', flush=True)
         self.conda_install('conda-build')
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Create index of offline channel')
+        print('##[group]Create index of offline channel', flush=True)
         self.conda_index(self.output_conda_offline_channel)
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Create install script')
+        print('##[group]Create install script', flush=True)
         self.write_install_script()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
-        print('Test install script')
+        print('##[group]Test install script', flush=True)
         self.test_install_script()
+        time.sleep(0.5)
+        print('##[endgroup]')
 
 if __name__ == '__main__':
     MinicondaOfflineInstaller().build()

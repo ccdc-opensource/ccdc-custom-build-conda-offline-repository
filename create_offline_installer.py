@@ -22,7 +22,7 @@ def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
     api_pkgs = [
-        'Pillow',
+        'pillow=7.0.0',
         'six',
         'lxml',
         'numpy',
@@ -563,7 +563,7 @@ done
         print('##[endgroup]')
 
         print('##[group]Pin python version in the installed conda environment', flush=True)
-        self.pin_python_version('3.*')
+        self.pin_python_version('3.7')
         time.sleep(0.5)
         print('##[endgroup]')
 

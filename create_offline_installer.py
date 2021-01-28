@@ -22,7 +22,7 @@ def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
     api_pkgs = [
-        'pillow=8.1.0',
+        'pillow==8.1.0',
         'six',
         'lxml',
         'numpy',

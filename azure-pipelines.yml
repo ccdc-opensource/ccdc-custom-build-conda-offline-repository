@@ -46,12 +46,6 @@ steps:
     archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)' 
     archiveType: '$(outputArchiveType)'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'miniconda-offline-installer'
-    publishLocation: 'Container'
-
 # Upload artifactory build info
 - task: ArtifactoryGenericUpload@2
   inputs:

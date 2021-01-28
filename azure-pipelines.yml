@@ -51,3 +51,34 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'miniconda-offline-installer'
     publishLocation: 'Container'
+
+# Upload artifactory build info
+- task: ArtifactoryGenericUpload@2
+  inputs:
+    artifactoryService: 'devops-ccdc-3rd-party'
+    specSource: 'taskConfiguration'
+    fileSpec: |
+      {
+        "files": [
+          {
+            "pattern": "$(Build.ArtifactStagingDirectory)/miniconda3*",
+            "target": "ccdc-3rdparty-python-interpreters"
+          }
+        ]
+      }
+    replaceSpecVars: true
+    collectBuildInfo: true
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)-$(buildosname)'
+    module: 'miniconda3/$(buildosname)'
+    includeEnvVars: true
+    failNoOp: true
+  displayName: 'Upload distribution to artifactory'
+
+- task: ArtifactoryPublishBuildInfo@1
+  inputs:
+    artifactoryService: 'devops-ccdc-3rd-party'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)-$(buildosname)'
+    excludeEnvVars: '*password*;*secret*;*key*;*token*'
+  displayName: 'Publish build'

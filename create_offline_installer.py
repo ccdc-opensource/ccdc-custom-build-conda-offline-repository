@@ -540,6 +540,9 @@ done
         #self.test_install_script()
         #sys.exit()
 
+        # Set the variable in the azure pipeline so that the archiving stage later can pick up the right version
+        print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version()}", flush=True)
+
         print('##[group]Cleaning up build and output directories', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)

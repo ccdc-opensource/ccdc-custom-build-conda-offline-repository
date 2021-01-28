@@ -16,7 +16,7 @@ import pathlib
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.8.3')
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
 
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
@@ -563,7 +563,7 @@ done
         print('##[endgroup]')
 
         print('##[group]Pin python version in the installed conda environment', flush=True)
-        self.pin_python_version('3.7')
+        self.pin_python_version('3.7.*')
         time.sleep(0.5)
         print('##[endgroup]')
 

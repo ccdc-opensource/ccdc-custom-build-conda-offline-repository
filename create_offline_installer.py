@@ -367,14 +367,14 @@ class MinicondaOfflineInstaller:
             print(f'  - {p}')
 
     windows_install_script = """@echo off
-if x%~s1==x (
+if "%~1"=="" (
   echo "install target_dir [ccdc_packages_and_package_name_pairs...]"
   goto end
 )
 setlocal
 set installer_dir=%~dps0
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
-call %~s1\\Scripts\\activate
+call "%~1\\Scripts\\activate"
 echo "CCDC Miniconda installer: updating conda"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
 echo "CCDC Miniconda installer: updating all packages"

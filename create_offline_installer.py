@@ -29,6 +29,8 @@ def required_offline_conda_packages():
         'matplotlib',
         'pytest',
         'pandas',
+        'py-xgboost',
+        'scikit-learn',
     ]
     # these packages are required by other scripts that we distribute
     script_pkgs = [
@@ -37,7 +39,6 @@ def required_offline_conda_packages():
         'docutils',
         'pygments',
         'sphinx',
-        'py-xgboost', # solvate prediction
     ]
     return api_pkgs + script_pkgs
 

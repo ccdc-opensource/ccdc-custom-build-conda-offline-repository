@@ -400,9 +400,9 @@ if test $# -eq 0 ; then
 fi
 INSTALLER_DIR=$(dirname -- "$0")
 chmod +x $INSTALLER_DIR/{{ installer_exe }}
-$INSTALLER_DIR/{{ installer_exe }} -b -p $1
 unset PYTHONPATH
 unset PYTHONHOME
+$INSTALLER_DIR/{{ installer_exe }} -b -p $1
 . $1/bin/activate ""
 echo 'CCDC Miniconda installer: Updating conda'
 conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda

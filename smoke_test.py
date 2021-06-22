@@ -70,3 +70,5 @@ except:
 if not import_ok:
     import sys
     sys.exit(1)
+
+print('All imports worked, huzzah!')

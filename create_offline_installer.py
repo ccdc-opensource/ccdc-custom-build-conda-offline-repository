@@ -457,6 +457,12 @@ done
             subprocess.check_call(args, cwd=self.output_dir)
             print('Finished install successfully')
 
+            if sys.platform == 'win32':
+                test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.bat')
+            else:
+                test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.sh')
+            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda')])
+
     def pin_python_version(self):
         pinned_python = 'python 3.7'
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')

@@ -299,10 +299,15 @@ class MinicondaOfflineInstaller:
         """
         self._run_pkg_manager('conda', ['clean', '-y', '--all'])
 
-    def conda_update(self, *package_specs):
+    def conda_update_all(self):
         """Update local packages that are part of the installer
         """
         self._run_pkg_manager('conda', ['update', '-y', '--all'])
+
+    def conda_update_conda(self):
+        """Update local packages that are part of the installer
+        """
+        self._run_pkg_manager('conda', ['update', '-y', 'conda'])
 
     def conda_install_download_only(self, *package_specs):
         """Download a conda package given its specifications.
@@ -450,11 +455,11 @@ done
             subprocess.check_call(args, cwd=self.output_dir)
             print('Finished install successfully')
 
-    def pin_python_version(self, python_version):
+    def pin_python_version(self):
+        pinned_python = 'python==3.7.9'
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
         with open(pin_file, "w") as pinned:
-            pin_string = "python {0}\n".format(python_version)
-            pinned.write(pin_string)
+            pinned.write(f"{pinned_python}\n")
 
     def install_miniconda(self):
         print('Running %s' % self.install_args)
@@ -568,12 +573,17 @@ done
         print('##[endgroup]')
 
         print('##[group]Pin python version in the installed conda environment', flush=True)
-        self.pin_python_version('3.7.*')
+        self.pin_python_version()
         time.sleep(0.5)
         print('##[endgroup]')
 
         print('##[group]Remove conda packages that were part of the installer', flush=True)
         self.conda_cleanup()
+        time.sleep(0.5)
+        print('##[endgroup]')
+
+        print('##[group]Update conda', flush=True)
+        self.conda_update_conda()
         time.sleep(0.5)
         print('##[endgroup]')
 
@@ -583,7 +593,7 @@ done
         print('##[endgroup]')
 
         print('##[group]Download updates so that we can distribute them consistently', flush=True)
-        self.conda_update()
+        self.conda_update_all()
         time.sleep(0.5)
         print('##[endgroup]')
 

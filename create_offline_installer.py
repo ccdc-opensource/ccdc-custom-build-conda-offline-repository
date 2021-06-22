@@ -456,7 +456,7 @@ done
             print('Finished install successfully')
 
     def pin_python_version(self):
-        pinned_python = 'python==3.7.9'
+        pinned_python = 'python 3.7'
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
         with open(pin_file, "w") as pinned:
             pinned.write(f"{pinned_python}\n")

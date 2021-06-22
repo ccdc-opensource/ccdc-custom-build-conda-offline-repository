@@ -30,7 +30,9 @@ def required_offline_conda_packages():
         'six==1.16.0',
         'lxml==4.6.3',
         'numpy==1.20.3', # also used in mercury scripts
-        'matplotlib==3.4.2', # also used in mercury scripts
+        # matplotlib-base. Like matplotlib, minus the Qt dependency!!!!
+        # changing this to matplotlib breaks the build on Linux so beware.
+        'matplotlib-base==3.4.2', # also used in mercury scripts
         'pytest',
         'pandas==1.2.4', # also used in mercury scripts
         'xgboost==1.4.0', # equivalent to py-xgboost, but more used

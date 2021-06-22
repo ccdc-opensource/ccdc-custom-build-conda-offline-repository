@@ -385,15 +385,15 @@ set installer_dir=%~dps0
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
 call "%~1\\Scripts\\activate"
 echo "CCDC Miniconda installer: updating conda"
-call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q conda
 echo "CCDC Miniconda installer: updating all packages"
-call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q --all
 echo "CCDC Miniconda installer: installing required packages"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q {{ conda_packages }}
 shift
 :next_package
 if not "%1" == "" (
-    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels %2
+    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels -q %2
     shift
     shift
     goto next_package
@@ -414,19 +414,19 @@ unset PYTHONHOME
 $INSTALLER_DIR/{{ installer_exe }} -b -p $1
 . $1/bin/activate ""
 echo 'CCDC Miniconda installer: Updating conda'
-conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q conda
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 echo 'CCDC Miniconda installer: Updating all packages'
-conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q --all
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 echo 'CCDC Miniconda installer: Installing required packages'
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q {{ conda_packages }}
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 
 shift
 while test $# -gt 1
 do
-    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels $2
+    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels -q $2
     [ $? -eq 0 ] || exit $?; # exit if non-zero return code
     shift
     shift

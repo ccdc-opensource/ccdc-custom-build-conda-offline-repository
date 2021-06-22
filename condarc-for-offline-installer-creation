@@ -29,3 +29,6 @@ show_channel_urls: True
 # it looks though that artifactory doesn't provide proper support for
 # mirroring main (the patches in repodata-hotfixes are not applied)
 #use_only_tar_bz2: true
+
+# Do not show the progress bars, useless on CI builds
+quiet: true

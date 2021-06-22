@@ -21,24 +21,25 @@ def miniconda_installer_version():
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
+    # Please ensure that these versions are consistent with those in
+    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/wrapping/ccdc/requirements.txt
+    # and in
+    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/mercury/python-scripts-requirements.txt
     api_pkgs = [
-        'pillow==8.1.0',
-        'six',
-        'lxml',
-        'numpy',
-        'matplotlib',
+        'pillow<9.0',
+        'six==1.16.0',
+        'lxml==4.6.3',
+        'numpy==1.20.3', # also used in mercury scripts
+        'matplotlib==3.4.2', # also used in mercury scripts
         'pytest',
-        'pandas',
-        'py-xgboost',
-        'scikit-learn',
+        'pandas==1.2.4', # also used in mercury scripts
+        'py-xgboost==1.4.0',
+        'scikit-learn==0.24.2',
     ]
     # these packages are required by other scripts that we distribute
     script_pkgs = [
-        'docxtpl', # reports
-        'pockets',
-        'docutils',
-        'pygments',
-        'sphinx',
+        'docxtpl==0.11.5', # reports
+        'Jinja2', # crystallisability_prediction.py, solvate_prediction.py
     ]
     return api_pkgs + script_pkgs
 

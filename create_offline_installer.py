@@ -21,28 +21,33 @@ def miniconda_installer_version():
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
+
     # Please ensure that these versions are consistent with those in
     # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/wrapping/ccdc/requirements.txt
-    # and in
-    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/mercury/python-scripts-requirements.txt
     api_pkgs = [
         'pillow<9.0',
         'six==1.16.0',
         'lxml==4.6.3',
         'numpy==1.20.3', # also used in mercury scripts
-        # matplotlib-base. Like matplotlib, minus the Qt dependency!!!!
-        # changing this to matplotlib breaks the build on Linux so beware.
-        'matplotlib-base==3.4.2', # also used in mercury scripts
         'pytest',
         'pandas==1.2.4', # also used in mercury scripts
         'xgboost==1.4.0', # equivalent to py-xgboost, but more used
         'scikit-learn==0.24.2',
     ]
+
     # these packages are required by other scripts that we distribute
+    # Please ensure that these versions are consistent with those in
+    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/mercury/python-scripts-requirements.txt
     script_pkgs = [
         'docxtpl==0.11.5', # reports
+        # matplotlib-base. Like matplotlib, minus the Qt dependency!!!!
+        # changing this to matplotlib breaks the build on Linux so beware.
+        'matplotlib-base==3.4.2', # also used in mercury scripts
         'Jinja2', # crystallisability_prediction.py, solvate_prediction.py
+        'scipy==1.6.3',
+        'xlsxwriter==1.4.3',
     ]
+
     return api_pkgs + script_pkgs
 
 # Pass the build id from devops pipelines variables

@@ -33,7 +33,7 @@ def required_offline_conda_packages():
         'matplotlib==3.4.2', # also used in mercury scripts
         'pytest',
         'pandas==1.2.4', # also used in mercury scripts
-        'py-xgboost==1.4.0',
+        'xgboost==1.4.0', # equivalent to py-xgboost, but more used
         'scikit-learn==0.24.2',
     ]
     # these packages are required by other scripts that we distribute

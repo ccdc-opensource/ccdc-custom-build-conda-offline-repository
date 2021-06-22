@@ -1,2 +1,2 @@
-call "%~1\\Scripts\\activate"
-python3 smoke_test.py
+call "%~1\\Scripts\\activate.bat"
+python smoke_test.py

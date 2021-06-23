@@ -67,6 +67,12 @@ except:
     print('Cannot import from xgboost')
     import_ok = False
 
+try:
+    from scipy import misc
+except:
+    print('Cannot import from scipy')
+    import_ok = False
+
 if not import_ok:
     import sys
     sys.exit(1)

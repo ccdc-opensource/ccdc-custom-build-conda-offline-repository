@@ -1,9 +1,11 @@
-# channel locations. These override conda defaults, i.e., conda will
-# search *only* the channels listed here, in the order given.
-# Use "defaults" to automatically include all default channels.
-# Non-url channels will be interpreted as Anaconda.org usernames
-# (this can be changed by modifying the channel_alias key; see below).
-# The default is just 'defaults'.
+# This condarc file is used to force use of the conda-forge repositories
+# when installing new packages
+# It is used to create the offline channel used by the installers
+# and added to the generated miniconda environment to maintain consistency
+# 
+# CCDC tests the python scripts with these conda-forge packages and with pip
+# Changing channel priority or adding repositories is untested
+# 
 
 # According to this page, strict channel priority is required
 # and conda-forge must be on top, as order is important
@@ -23,12 +25,3 @@ channels:
 # Show channel URLs when displaying what is going to be downloaded
 # and in 'conda list'. The default is False.
 show_channel_urls: True
-
-# Workaround for https://www.jfrog.com/jira/browse/RTFACT-19267
-# was important when downloading conda packages from artifactory
-# it looks though that artifactory doesn't provide proper support for
-# mirroring main (the patches in repodata-hotfixes are not applied)
-#use_only_tar_bz2: true
-
-# Do not show the progress bars, useless on CI builds
-quiet: true

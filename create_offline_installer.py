@@ -304,23 +304,23 @@ class MinicondaOfflineInstaller:
     def conda_cleanup(self, *package_specs):
         """Remove package archives (so that we don't distribute them as they are already part of the installer)
         """
-        self._run_pkg_manager('conda', ['clean', '-y', '--all'])
+        self._run_pkg_manager('conda', ['clean', '-y', '-q', '--all'])
 
     def conda_update_all(self):
         """Update local packages that are part of the installer
         """
-        self._run_pkg_manager('conda', ['update', '-y', '--all'])
+        self._run_pkg_manager('conda', ['update', '-y', '-q', '--all'])
 
     def conda_update_conda(self):
         """Update local packages that are part of the installer
         """
-        self._run_pkg_manager('conda', ['update', '-y', 'conda'])
+        self._run_pkg_manager('conda', ['update', '-y', '-q', 'conda'])
 
     def conda_install_download_only(self, *package_specs):
         """Download a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
-        self._run_pkg_manager('conda', ['install', '-y', '--download-only'], *package_specs)
+        self._run_pkg_manager('conda', ['install', '-y', '--download-only', '-q'], *package_specs)
 
     def package_name(self, package_filename):
         """Return the bit of a filename before the version number starts
@@ -357,7 +357,7 @@ class MinicondaOfflineInstaller:
         with open(updated_patch_file, 'w') as f:
             f.write(s)
 
-        self._run_pkg_manager('conda', ['index', '-p', updated_patch_file, channel])
+        self._run_pkg_manager('conda', ['index', '--no-progress', '-p', updated_patch_file, channel])
 
     def copy_packages(self):
         """Copy packages from the miniconda install to the final installer location
@@ -387,8 +387,11 @@ if "%~1"=="" (
 )
 setlocal
 set installer_dir=%~dps0
+set target_miniconda=%~1
+echo "CCDC Miniconda installer: running installer"
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
-call "%~1\\Scripts\\activate"
+echo "CCDC Miniconda installer: activating conda environment"
+call "%target_miniconda%\\Scripts\\activate"
 echo "CCDC Miniconda installer: updating conda"
 call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q conda
 echo "CCDC Miniconda installer: updating all packages"
@@ -404,6 +407,8 @@ if not "%1" == "" (
     goto next_package
 )
 endlocal
+echo "CCDC Miniconda installer: copying condarc"
+cp "%installer_dir%\\condarc-for-offline-installer-creation" "%target_miniconda%\\condarc"
 :end
 """
 
@@ -413,11 +418,14 @@ if test $# -eq 0 ; then
     exit 1
 fi
 INSTALLER_DIR=$(dirname -- "$0")
-chmod +x $INSTALLER_DIR/{{ installer_exe }}
+TARGET_MINICONDA=$1
+chmod +x "$INSTALLER_DIR/{{ installer_exe }}"
 unset PYTHONPATH
 unset PYTHONHOME
-$INSTALLER_DIR/{{ installer_exe }} -b -p $1
-. $1/bin/activate ""
+echo "CCDC Miniconda installer: running installer"
+"$INSTALLER_DIR/{{ installer_exe }}" -b -p "$TARGET_MINICONDA"
+echo "CCDC Miniconda installer: activating conda environment"
+. "$TARGET_MINICONDA/bin/activate" ""
 echo 'CCDC Miniconda installer: Updating conda'
 conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q conda
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
@@ -436,6 +444,8 @@ do
     shift
     shift
 done
+echo "CCDC Miniconda installer: copying condarc"
+cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/condarc"
 """
 
     def write_install_script(self):
@@ -449,6 +459,7 @@ done
             f.write(script)
         if sys.platform != 'win32':
             os.chmod(self.install_script_path, 0o755)
+        shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'condarc-for-offline-installer-creation'), self.output_dir)
 
     def test_install_script(self):
         '''Run the install script on a temporary directory'''
@@ -517,7 +528,7 @@ done
         """Install a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
-        self._run_pkg_manager('conda', ['install', '-y'], *package_specs)
+        self._run_pkg_manager('conda', ['install', '-y', '-q'], *package_specs)
 
     def _run_pkg_manager(self, pkg_manager_name, extra_args, *package_specs):
         my_env = os.environ.copy()

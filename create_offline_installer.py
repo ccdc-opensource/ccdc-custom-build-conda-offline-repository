@@ -406,9 +406,9 @@ if not "%1" == "" (
     shift
     goto next_package
 )
-endlocal
 echo "CCDC Miniconda installer: copying condarc"
-cp "%installer_dir%\\condarc-for-offline-installer-creation" "%target_miniconda%\\condarc"
+copy "%installer_dir%\\condarc-for-offline-installer-creation" "%target_miniconda%\\condarc"
+endlocal
 :end
 """
 

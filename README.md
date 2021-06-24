@@ -45,7 +45,7 @@ Remember to wait for the daily x-mirror script and the linux build machine ansib
 ## What is the reason for the repodata-hotfixes external repository?
 
 The initial version of this script would only use the main conda repositories to build the offline channel. These repositories contain multiple versions of packages that will not install cleanly in offline mode, unless the resulting channel files are patches with some workarounds.
-The details were not documented extensively and can be found by reading through the discussion in (this bug report in the conda project)[https://github.com/conda/conda/issues/8090].
+The details were not documented extensively and can be found by reading through the discussion in [this bug report in the conda project](https://github.com/conda/conda/issues/8090).
 
 Since we started using the conda-forge channels to provide packages like docxtpl etc, and we used strict priority in favour of conda-forge channels, the fixes are no longer required.
 The workaround however will be kept and commented out (see the def conda_index(self, channel): method) and the link to the external repository kept, in case we move to using the main repositories again.

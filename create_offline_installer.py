@@ -16,30 +16,38 @@ import pathlib
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.8.3')
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
 
 def required_offline_conda_packages():
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
+
+    # Please ensure that these versions are consistent with those in
+    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/wrapping/ccdc/requirements.txt
     api_pkgs = [
-        'pillow=7.0.0',
-        'six',
-        'lxml',
-        'numpy',
-        'matplotlib',
+        'pillow<9.0',
+        'six==1.16.0',
+        'lxml==4.6.3',
+        'numpy==1.20.3', # also used in mercury scripts
         'pytest',
-        'pandas',
-        'py-xgboost',
-        'scikit-learn',
+        'pandas==1.2.4', # also used in mercury scripts
+        'xgboost==1.4.0', # equivalent to py-xgboost, but more used
+        'scikit-learn==0.24.2',
     ]
+
     # these packages are required by other scripts that we distribute
+    # Please ensure that these versions are consistent with those in
+    # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/mercury/python-scripts-requirements.txt
     script_pkgs = [
-        'docxtpl', # reports
-        'pockets',
-        'docutils',
-        'pygments',
-        'sphinx',
+        'docxtpl==0.11.5', # reports
+        # matplotlib-base. Like matplotlib, minus the Qt dependency!!!!
+        # changing this to matplotlib breaks the build on Linux so beware.
+        'matplotlib-base==3.4.2', # also used in mercury scripts
+        'Jinja2', # crystallisability_prediction.py, solvate_prediction.py
+        'scipy==1.6.3',
+        'xlsxwriter==1.4.3',
     ]
+
     return api_pkgs + script_pkgs
 
 # Pass the build id from devops pipelines variables
@@ -296,18 +304,23 @@ class MinicondaOfflineInstaller:
     def conda_cleanup(self, *package_specs):
         """Remove package archives (so that we don't distribute them as they are already part of the installer)
         """
-        self._run_pkg_manager('conda', ['clean', '-y', '--all'])
+        self._run_pkg_manager('conda', ['clean', '-y', '-q', '--all'])
 
-    def conda_update(self, *package_specs):
+    def conda_update_all(self):
         """Update local packages that are part of the installer
         """
-        self._run_pkg_manager('conda', ['update', '-y', '--all'])
+        self._run_pkg_manager('conda', ['update', '-y', '-q', '--all'])
+
+    def conda_update_conda(self):
+        """Update local packages that are part of the installer
+        """
+        self._run_pkg_manager('conda', ['update', '-y', '-q', 'conda'])
 
     def conda_install_download_only(self, *package_specs):
         """Download a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
-        self._run_pkg_manager('conda', ['install', '-y', '--download-only'], *package_specs)
+        self._run_pkg_manager('conda', ['install', '-y', '--download-only', '-q'], *package_specs)
 
     def package_name(self, package_filename):
         """Return the bit of a filename before the version number starts
@@ -344,7 +357,7 @@ class MinicondaOfflineInstaller:
         with open(updated_patch_file, 'w') as f:
             f.write(s)
 
-        self._run_pkg_manager('conda', ['index', '-p', updated_patch_file, channel])
+        self._run_pkg_manager('conda', ['index', '--no-progress', '-p', updated_patch_file, channel])
 
     def copy_packages(self):
         """Copy packages from the miniconda install to the final installer location
@@ -374,22 +387,27 @@ if "%~1"=="" (
 )
 setlocal
 set installer_dir=%~dps0
+set target_miniconda=%~1
+echo "CCDC Miniconda installer: running installer"
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
-call "%~1\\Scripts\\activate"
+echo "CCDC Miniconda installer: activating conda environment"
+call "%target_miniconda%\\Scripts\\activate"
 echo "CCDC Miniconda installer: updating conda"
-call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels conda
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q conda
 echo "CCDC Miniconda installer: updating all packages"
-call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels --all
+call conda update -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q --all
 echo "CCDC Miniconda installer: installing required packages"
-call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels {{ conda_packages }}
+call conda install -y --channel "%installer_dir%conda_offline_channel" --offline --override-channels -q {{ conda_packages }}
 shift
 :next_package
 if not "%1" == "" (
-    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels %2
+    call conda install -y --channel "%installer_dir%%1_conda_channel" --offline --override-channels -q %2
     shift
     shift
     goto next_package
 )
+echo "CCDC Miniconda installer: copying condarc"
+copy "%installer_dir%\\condarc-for-offline-installer-creation" "%target_miniconda%\\condarc"
 endlocal
 :end
 """
@@ -400,29 +418,34 @@ if test $# -eq 0 ; then
     exit 1
 fi
 INSTALLER_DIR=$(dirname -- "$0")
-chmod +x $INSTALLER_DIR/{{ installer_exe }}
-$INSTALLER_DIR/{{ installer_exe }} -b -p $1
+TARGET_MINICONDA=$1
+chmod +x "$INSTALLER_DIR/{{ installer_exe }}"
 unset PYTHONPATH
 unset PYTHONHOME
-. $1/bin/activate ""
+echo "CCDC Miniconda installer: running installer"
+"$INSTALLER_DIR/{{ installer_exe }}" -b -p "$TARGET_MINICONDA"
+echo "CCDC Miniconda installer: activating conda environment"
+. "$TARGET_MINICONDA/bin/activate" ""
 echo 'CCDC Miniconda installer: Updating conda'
-conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels conda
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q conda
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 echo 'CCDC Miniconda installer: Updating all packages'
-conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels --all
+conda update -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q --all
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 echo 'CCDC Miniconda installer: Installing required packages'
-conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels {{ conda_packages }}
+conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --override-channels -q {{ conda_packages }}
 [ $? -eq 0 ] || exit $?; # exit if non-zero return code
 
 shift
 while test $# -gt 1
 do
-    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels $2
+    conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels -q $2
     [ $? -eq 0 ] || exit $?; # exit if non-zero return code
     shift
     shift
 done
+echo "CCDC Miniconda installer: copying condarc"
+cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/condarc"
 """
 
     def write_install_script(self):
@@ -436,6 +459,7 @@ done
             f.write(script)
         if sys.platform != 'win32':
             os.chmod(self.install_script_path, 0o755)
+        shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'condarc-for-offline-installer-creation'), self.output_dir)
 
     def test_install_script(self):
         '''Run the install script on a temporary directory'''
@@ -449,11 +473,17 @@ done
             subprocess.check_call(args, cwd=self.output_dir)
             print('Finished install successfully')
 
-    def pin_python_version(self, python_version):
+            if sys.platform == 'win32':
+                test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.bat')
+            else:
+                test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.sh')
+            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda')])
+
+    def pin_python_version(self):
+        pinned_python = 'python 3.7'
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
         with open(pin_file, "w") as pinned:
-            pin_string = "python {0}\n".format(python_version)
-            pinned.write(pin_string)
+            pinned.write(f"{pinned_python}\n")
 
     def install_miniconda(self):
         print('Running %s' % self.install_args)
@@ -498,7 +528,7 @@ done
         """Install a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
-        self._run_pkg_manager('conda', ['install', '-y'], *package_specs)
+        self._run_pkg_manager('conda', ['install', '-y', '-q'], *package_specs)
 
     def _run_pkg_manager(self, pkg_manager_name, extra_args, *package_specs):
         my_env = os.environ.copy()
@@ -541,6 +571,9 @@ done
         #self.test_install_script()
         #sys.exit()
 
+        # Set the variable in the azure pipeline so that the archiving stage later can pick up the right version
+        print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version()}", flush=True)
+
         print('##[group]Cleaning up build and output directories', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
@@ -564,12 +597,17 @@ done
         print('##[endgroup]')
 
         print('##[group]Pin python version in the installed conda environment', flush=True)
-        self.pin_python_version('3.7')
+        self.pin_python_version()
         time.sleep(0.5)
         print('##[endgroup]')
 
         print('##[group]Remove conda packages that were part of the installer', flush=True)
         self.conda_cleanup()
+        time.sleep(0.5)
+        print('##[endgroup]')
+
+        print('##[group]Update conda', flush=True)
+        self.conda_update_conda()
         time.sleep(0.5)
         print('##[endgroup]')
 
@@ -579,7 +617,7 @@ done
         print('##[endgroup]')
 
         print('##[group]Download updates so that we can distribute them consistently', flush=True)
-        self.conda_update()
+        self.conda_update_all()
         time.sleep(0.5)
         print('##[endgroup]')
 

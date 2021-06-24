@@ -1,8 +1,4 @@
-# Conda Charmer's Corner
-
-A project to create offline miniconda installers for use by the CSD System installer
-
-Please follow (this workflow)[https://confluence.ccdc.cam.ac.uk/x/HBV_/] when making changes to the repository.
+# A local build that creates the offline channel our installers use
 
 ## Getting Started
 
@@ -19,7 +15,7 @@ Please follow (this workflow)[https://confluence.ccdc.cam.ac.uk/x/HBV_/] when ma
 - push
 - joy
 
-## Changing the miniconda version
+## Changing the miniconda installer version
 
 - change the default version in the miniconda_installer_version method
 - test locally
@@ -28,23 +24,23 @@ Please follow (this workflow)[https://confluence.ccdc.cam.ac.uk/x/HBV_/] when ma
 - wait for the build
 - joy
 
-## Uploading the artefacts to build servers
+## Uploading the artefacts to build machines
 
-### Windows
+### Windows dev machines
 
-- Upload (as buildman) the contents of the zip file to \\synology02\x-mirror\x_mirror\buildman\tools\miniconda3
+- Upload (as buildman) the contents of the windows zip file to \\synology02\x-mirror\x_mirror\buildman\tools\miniconda3
 
-### Linux
+### Everything else
 
-- convert the zip file to a tar.gz archive
-- upload the tar.gz file to artifactory here: https://artifactory.ccdc.cam.ac.uk/webapp/#/artifacts/browse/tree/General/ccdc-3rd-party-centos-6-builds
-- update the roles\install_third_party\vars\main.yml file in the build_machines mercurial repository
-
-### MacOS
-
-- extract the contents of the zip file in /local/buildman/tools/miniconda3 on buildmac13 and buildmac15
+- update the stage 3 role variable [here](https://github.com/ccdc-confidential/build-systems-ansible-role-ccdc-cpp-build-machine-stage3/blob/main/vars/main.yml)
+- run the relevant ansible playbooks to update build machines
 
 Remember to wait for the daily x-mirror script and the linux build machine ansible updates to kick in before changing cppbuilds_shared/buildtool/environment/setup.py!!!!!
+
+## Use the new build in the main builds
+
+- Update the build in the `setup_miniconda` method in [buildtool's environment/setup.py file](https://github.com/ccdc-confidential/cpp-apps-main/blob/main/cppbuilds_shared/buildtool/environment/setup.py)
+
 
 ## What is the reason for the repodata-hotfixes external repository?
 

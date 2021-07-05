@@ -390,6 +390,10 @@ set installer_dir=%~dps0
 set target_miniconda=%~1
 echo "CCDC Miniconda installer: running installer"
 start /wait "" "%installer_dir%{{ installer_exe }}" /AddToPath=0 /S /D=%~s1
+if errorlevel 1 (
+   echo Miniconda failed to install: %errorlevel%
+   exit /b %errorlevel%
+)
 echo "CCDC Miniconda installer: activating conda environment"
 call "%target_miniconda%\\Scripts\\activate"
 echo "CCDC Miniconda installer: updating conda"

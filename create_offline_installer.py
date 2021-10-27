@@ -26,13 +26,13 @@ def required_offline_conda_packages():
     # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/wrapping/ccdc/requirements.txt
     api_pkgs = [
         'pillow<9.0',
-        'six==1.16.0',
+        'six',
         'lxml==4.6.3',
-        'numpy==1.20.3', # also used in mercury scripts
+        'numpy==1.21.3', # also used in mercury scripts
         'pytest',
-        'pandas==1.2.4', # also used in mercury scripts
-        'xgboost==1.4.0', # equivalent to py-xgboost, but more used
-        'scikit-learn==0.24.2',
+        'pandas==1.3.4', # also used in mercury scripts
+        'xgboost==1.5.0', # equivalent to py-xgboost, but more used
+        'scikit-learn==1.0.1',
     ]
 
     # these packages are required by other scripts that we distribute
@@ -42,10 +42,11 @@ def required_offline_conda_packages():
         'docxtpl==0.11.5', # reports
         # matplotlib-base. Like matplotlib, minus the Qt dependency!!!!
         # changing this to matplotlib breaks the build on Linux so beware.
-        'matplotlib-base==3.4.2', # also used in mercury scripts
+        'matplotlib-base==3.4.3', # also used in mercury scripts
         'Jinja2', # crystallisability_prediction.py, solvate_prediction.py
-        'scipy==1.6.3',
-        'xlsxwriter==1.4.3',
+        'scipy==1.7.1',
+        'tensorflow==2.4.3', # For aromatic analyser script
+        'xlsxwriter==3.0.1',
     ]
 
     return api_pkgs + script_pkgs
@@ -600,11 +601,6 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print('##[group]Pin python version in the installed conda environment', flush=True)
-        self.pin_python_version()
-        time.sleep(0.5)
-        print('##[endgroup]')
-
         print('##[group]Remove conda packages that were part of the installer', flush=True)
         self.conda_cleanup()
         time.sleep(0.5)
@@ -622,6 +618,11 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
 
         print('##[group]Download updates so that we can distribute them consistently', flush=True)
         self.conda_update_all()
+        time.sleep(0.5)
+        print('##[endgroup]')
+
+        print('##[group]Pin python version in the installed conda environment', flush=True)
+        self.pin_python_version()
         time.sleep(0.5)
         print('##[endgroup]')
 

@@ -30,9 +30,9 @@ def required_offline_conda_packages():
         'lxml==4.6.3',
         'numpy==1.21.3', # also used in mercury scripts
         'pytest',
-        'pandas==1.3.4', # also used in mercury scripts
+        'pandas==1.2.5', # also used in mercury scripts
         'xgboost==1.5.0', # equivalent to py-xgboost, but more used
-        'scikit-learn==1.0.1',
+        'scikit-learn==0.24.2',
     ]
 
     # these packages are required by other scripts that we distribute

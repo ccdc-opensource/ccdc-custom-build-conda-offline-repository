@@ -45,7 +45,8 @@ def required_offline_conda_packages():
         'matplotlib-base==3.4.3', # also used in mercury scripts
         'Jinja2', # crystallisability_prediction.py, solvate_prediction.py
         'scipy==1.7.1',
-        'tensorflow==1.14.0', # For aromatic analyser script
+        'tensorflow==1.14.0',   # For aromatic analyser script
+        'h5py<3.0',             # For tensorflow
         'xlsxwriter==3.0.1',
     ]
 

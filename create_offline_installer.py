@@ -622,6 +622,11 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
+        # Pin the python version here
+        # We used to pinned it before installing all the required modules but
+        # that caused conda to produce lots of version conflicts when
+        # tensorflow was added to the list of required modules.
+        # So now we pin it after we've installed and updated everything.
         print('##[group]Pin python version in the installed conda environment', flush=True)
         self.pin_python_version()
         time.sleep(0.5)

@@ -1,15 +1,13 @@
+import sys
+minimal = sys.argv[1] == 'minimal'
+
 import_ok = True
+
 print('Testing all imports')
 try:
     from PIL import Image
 except:
     print('Cannot import Image from pillow')
-    import_ok = False
-
-try:
-    import six
-except:
-    print('Cannot import six')
     import_ok = False
 
 try:
@@ -22,14 +20,6 @@ try:
     import numpy
 except:
     print('Cannot import numpy')
-    import_ok = False
-
-try:
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plot
-except Exception as e:
-    print(f'Cannot import matplotlib: {e}')
     import_ok = False
 
 try:
@@ -67,17 +57,26 @@ except:
     print('Cannot import from xgboost')
     import_ok = False
 
-try:
-    from scipy import misc
-except:
-    print('Cannot import from scipy')
-    import_ok = False
+if not minimal:
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plot
+    except Exception as e:
+        print(f'Cannot import matplotlib: {e}')
+        import_ok = False
 
-try:
-    from tensorflow.keras.models import load_model
-except:
-    print('Cannot import from tensorflow')
-    import_ok = False
+    try:
+        from scipy import misc
+    except:
+        print('Cannot import from scipy')
+        import_ok = False
+
+    try:
+        from tensorflow.keras.models import load_model
+    except:
+        print('Cannot import from tensorflow')
+        import_ok = False
 
 if not import_ok:
     import sys

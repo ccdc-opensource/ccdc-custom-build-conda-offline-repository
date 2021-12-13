@@ -41,9 +41,17 @@ steps:
   displayName: 'Create Offline installer'
 
 - task: ArchiveFiles@2
+  displayName: 'Archive minimal miniconda archive'
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/minimal-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/minimal-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)'
+    archiveType: '$(outputArchiveType)'
+
+- task: ArchiveFiles@2
+  displayName: 'Archive miniconda archive'
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)' 
+    archiveFile: '$(Build.ArtifactStagingDirectory)/miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)'
     archiveType: '$(outputArchiveType)'
 
 # Upload artifactory build info
@@ -55,7 +63,7 @@ steps:
       {
         "files": [
           {
-            "pattern": "$(Build.ArtifactStagingDirectory)/miniconda3*",
+            "pattern": "$(Build.ArtifactStagingDirectory)/*miniconda3*",
             "target": "ccdc-3rdparty-python-interpreters"
           }
         ]

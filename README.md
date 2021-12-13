@@ -3,7 +3,7 @@
 ## Getting Started
 
 - Clone this repository locally
-- run git submodule update to fetch the repodata-hotfixes repository contents
+- run *git submodule init* and *git submodule update* to fetch the repodata-hotfixes repository contents
 - Create a python3 virtualenv
 - pip install -r requirements.txt
 - run with python create_offline_installer.py

@@ -18,7 +18,7 @@ import pathlib
 def miniconda_installer_version():
     return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
 
-def required_offline_conda_packages():
+def required_offline_conda_packages(minimal):
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
 
@@ -26,7 +26,6 @@ def required_offline_conda_packages():
     # https://github.com/ccdc-confidential/cpp-apps-main/blob/main/wrapping/ccdc/requirements.txt
     api_pkgs = [
         'pillow<9.0',
-        'six',
         'lxml==4.6.3',
         'numpy==1.21.3', # also used in mercury scripts
         'pytest',
@@ -50,7 +49,10 @@ def required_offline_conda_packages():
         'xlsxwriter==3.0.1',
     ]
 
-    return api_pkgs + script_pkgs
+    if minimal:
+        return api_pkgs
+    else:
+        return api_pkgs + script_pkgs
 
 # Pass the build id from devops pipelines variables
 # Make sure the resulting artefact is clearly labeled if produced on a developer machine
@@ -214,7 +216,8 @@ if IS_WINDOWS:
                     SMTO_ABORTIFHUNG, 5000, ctypes.pointer(wintypes.DWORD()))
 
 class MinicondaOfflineInstaller:
-    def __init__(self):
+    def __init__(self, minimal=False):
+        self.minimal = minimal
         self.extensions = {
             'Windows': 'exe',
             'Linux': 'sh',
@@ -237,7 +240,10 @@ class MinicondaOfflineInstaller:
 
     @property
     def name(self):
-        return 'miniconda3'
+        if self.minimal:
+            return 'minimal-miniconda3'
+        else:
+            return 'miniconda3'
 
     @property
     def build_install_dir(self):
@@ -257,7 +263,10 @@ class MinicondaOfflineInstaller:
     @property
     def output_installer(self):
         '''local path to the miniconda installer'''
-        return os.path.join(self.output_dir, self.installer_name)
+        if self.minimal:
+            return os.path.join(self.output_dir, 'minimal-' + self.installer_name)
+        else:
+            return os.path.join(self.output_dir, self.installer_name)
 
     @property
     def output_conda_offline_channel(self):
@@ -459,8 +468,11 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
             script = self.windows_install_script
         else:
             script = self.unix_install_script
-        script = script.replace('{{ installer_exe }}', '"'+self.installer_name+'"')
-        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages()]))
+        installer_name = self.installer_name
+        if self.minimal:
+            installer_name = 'minimal-' + installer_name
+        script = script.replace('{{ installer_exe }}', '"'+installer_name+'"')
+        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages(self.minimal)]))
         with open(self.install_script_path, "w") as f:
             f.write(script)
         if sys.platform != 'win32':
@@ -483,7 +495,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
                 test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.bat')
             else:
                 test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.sh')
-            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda')])
+            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda'), 'minimal' if self.minimal else 'full'])
 
     def pin_python_version(self):
         pinned_python = 'python 3.7'
@@ -573,14 +585,10 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
                 print('Conda configuration found in %s. This might affect installation of packages' % path)
 
     def build(self):
-        #print('Test install script')
-        #self.test_install_script()
-        #sys.exit()
-
         # Set the variable in the azure pipeline so that the archiving stage later can pick up the right version
         print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version()}", flush=True)
 
-        print('##[group]Cleaning up build and output directories', flush=True)
+        print(f'##[group]Cleaning up build and output directories for minimal={self.minimal}', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
@@ -613,7 +621,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         print('##[endgroup]')
 
         print('##[group]Fetch packages', flush=True)
-        self.conda_install(*required_offline_conda_packages())
+        self.conda_install(*required_offline_conda_packages(self.minimal))
         time.sleep(0.5)
         print('##[endgroup]')
 
@@ -652,12 +660,13 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print('##[group]Test install script', flush=True)
+        print(f'##[group]Test install script for minimal={self.minimal}', flush=True)
         self.test_install_script()
         time.sleep(0.5)
         print('##[endgroup]')
 
 if __name__ == '__main__':
+    MinicondaOfflineInstaller(minimal=True).build()
     MinicondaOfflineInstaller().build()
 
 

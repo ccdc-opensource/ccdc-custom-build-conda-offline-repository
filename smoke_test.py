@@ -1,5 +1,5 @@
 import sys
-minimal = sys.argv[1] == 'minimal'
+full = sys.argv[1] == 'full'
 
 import_ok = True
 
@@ -57,7 +57,13 @@ except:
     print('Cannot import from xgboost')
     import_ok = False
 
-if not minimal:
+try:
+    import docxtpl
+except:
+    print('Cannot import docxtpl')
+    import_ok = False
+
+if full:
     try:
         import matplotlib
         matplotlib.use('Agg')

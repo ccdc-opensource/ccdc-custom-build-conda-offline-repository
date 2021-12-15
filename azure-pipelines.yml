@@ -41,10 +41,10 @@ steps:
   displayName: 'Create Offline installer'
 
 - task: ArchiveFiles@2
-  displayName: 'Archive minimal miniconda archive'
+  displayName: 'Archive webcsd-csp miniconda archive'
   inputs:
-    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/minimal-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/minimal-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)'
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/output/webcsd-csp-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname)'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/webcsd-csp-miniconda3-$(miniconda_installer_version)-$(Build.BuildId)-$(buildosname).$(outputArchiveExtension)'
     archiveType: '$(outputArchiveType)'
 
 - task: ArchiveFiles@2

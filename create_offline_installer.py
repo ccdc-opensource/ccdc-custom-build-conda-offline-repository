@@ -18,7 +18,7 @@ import pathlib
 def miniconda_installer_version():
     return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
 
-def required_offline_conda_packages(minimal):
+def required_offline_conda_packages(prefix, extra_conda_packages):
     # these are the packages that we recommend for using the API
     # https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html#using-conda
 
@@ -49,10 +49,10 @@ def required_offline_conda_packages(minimal):
         'xlsxwriter==3.0.1',
     ]
 
-    if minimal:
-        return api_pkgs
+    if prefix is not None:
+        return api_pkgs + extra_conda_packages
     else:
-        return api_pkgs + script_pkgs
+        return api_pkgs + script_pkgs + extra_conda_packages
 
 # Pass the build id from devops pipelines variables
 # Make sure the resulting artefact is clearly labeled if produced on a developer machine
@@ -216,8 +216,21 @@ if IS_WINDOWS:
                     SMTO_ABORTIFHUNG, 5000, ctypes.pointer(wintypes.DWORD()))
 
 class MinicondaOfflineInstaller:
-    def __init__(self, minimal=False):
-        self.minimal = minimal
+    def __init__(self, prefix=None, extra_conda_packages=None):
+        '''
+        If prefix is not None, something other than the full installer (which
+        is used in the CSDS installer to run Mercury scripts) will be built.
+
+        By setting a prefix
+        1. the miniconda installer will be called <prefix>-<original installer name>
+        2. the required conda packages are set to just those needed for csd-python-api
+
+        Use the extra_conda_packages to specify a list of any additional conda
+        packages to add.
+
+        '''
+        self.prefix = prefix
+        self.extra_conda_packages = extra_conda_packages if extra_conda_packages else []
         self.extensions = {
             'Windows': 'exe',
             'Linux': 'sh',
@@ -240,8 +253,8 @@ class MinicondaOfflineInstaller:
 
     @property
     def name(self):
-        if self.minimal:
-            return 'minimal-miniconda3'
+        if self.prefix is not None:
+            return f'{self.prefix}-miniconda3'
         else:
             return 'miniconda3'
 
@@ -263,8 +276,8 @@ class MinicondaOfflineInstaller:
     @property
     def output_installer(self):
         '''local path to the miniconda installer'''
-        if self.minimal:
-            return os.path.join(self.output_dir, 'minimal-' + self.installer_name)
+        if self.prefix is not None:
+            return os.path.join(self.output_dir, self.prefix + '-' + self.installer_name)
         else:
             return os.path.join(self.output_dir, self.installer_name)
 
@@ -469,10 +482,10 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         else:
             script = self.unix_install_script
         installer_name = self.installer_name
-        if self.minimal:
-            installer_name = 'minimal-' + installer_name
+        if self.prefix is not None:
+            installer_name = self.prefix + '-' + installer_name
         script = script.replace('{{ installer_exe }}', '"'+installer_name+'"')
-        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages(self.minimal)]))
+        script = script.replace('{{ conda_packages }}', ' '.join(['"'+pkg+'"' for pkg in required_offline_conda_packages(self.prefix, self.extra_conda_packages)]))
         with open(self.install_script_path, "w") as f:
             f.write(script)
         if sys.platform != 'win32':
@@ -495,7 +508,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
                 test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.bat')
             else:
                 test_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smoke_test.sh')
-            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda'), 'minimal' if self.minimal else 'full'])
+            subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda'), self.prefix if self.prefix is not None else 'full'])
 
     def pin_python_version(self):
         pinned_python = 'python 3.7'
@@ -588,7 +601,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         # Set the variable in the azure pipeline so that the archiving stage later can pick up the right version
         print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version()}", flush=True)
 
-        print(f'##[group]Cleaning up build and output directories for minimal={self.minimal}', flush=True)
+        print(f'##[group]Cleaning up build and output directories for prefix={self.prefix}', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
@@ -621,7 +634,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         print('##[endgroup]')
 
         print('##[group]Fetch packages', flush=True)
-        self.conda_install(*required_offline_conda_packages(self.minimal))
+        self.conda_install(*required_offline_conda_packages(self.prefix, self.extra_conda_packages))
         time.sleep(0.5)
         print('##[endgroup]')
 
@@ -660,13 +673,16 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print(f'##[group]Test install script for minimal={self.minimal}', flush=True)
+        print(f'##[group]Test install script for prefix={self.prefix}', flush=True)
         self.test_install_script()
         time.sleep(0.5)
         print('##[endgroup]')
 
 if __name__ == '__main__':
-    MinicondaOfflineInstaller(minimal=True).build()
+    # To be used in the webcsd-csp installer for landscape report generation
+    MinicondaOfflineInstaller(
+            prefix='webcsd-csp',
+            extra_conda_packages=['docxtpl==0.11.5']
+            ).build()
     MinicondaOfflineInstaller().build()
-
 

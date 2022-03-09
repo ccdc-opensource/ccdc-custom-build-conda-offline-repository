@@ -682,7 +682,7 @@ if __name__ == '__main__':
     # To be used in the webcsd-csp installer for landscape report generation
     MinicondaOfflineInstaller(
             prefix='webcsd-csp',
-            extra_conda_packages=['docxtpl==0.11.5']
+            extra_conda_packages=['docxtpl==0.11.5', 'matplotlib-base==3.4.3']
             ).build()
     MinicondaOfflineInstaller().build()
 

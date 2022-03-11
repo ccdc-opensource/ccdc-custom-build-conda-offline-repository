@@ -15,40 +15,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - uses: actions/checkout@v2
-
-      - uses: jfrog/setup-jfrog-cli@v1
-        env:
-          JF_ARTIFACTORY_1: ${{ secrets.ARTIFACTORY_GH__READ_ONLY_EXPORT }}
-
-      - name: Download artifacts from Artifactory
-        run: |
-          jfrog rt dl --sort-by created --sort-order desc --limit 1 "ccdc-3rdparty-python-interpreters/miniconda3-py37_*-linux.tar.gz" $DOCKER_BUILD_CONTEXT
-          echo "PYTHON_API_BUILD=$(find $DOCKER_BUILD_CONTEXT -name 'miniconda3-py37_*' | grep -oP '[\d]{3,}')" >> $GITHUB_ENV
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Login to CCDC Artifactory Container Registry
-        uses: docker/login-action@v1
-        with: 
-          registry: ccdc-docker-internal-artifactory.ccdc.cam.ac.uk
-          username: gh-docker-internal-read-write
-          password: ${{ secrets.ARTIFACTORY_GH_DOCKER_INTERNAL_READ_WRITE }}
-
-      # Note: Using `push: true` fails to push the image to artifactory giving a 404. 
-      # Instead we load the image to the local registry then push from there.
-      - name: Build container image
-        uses: docker/build-push-action@v2
-        with:
-          context: ${{ env.DOCKER_BUILD_CONTEXT }}
-          load: true
-          tags: ccdc-python-api:latest
-
-      - name: Push container image to Artifactory
-        run: | 
-          docker tag ccdc-python-api:latest ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:${{ env.CSP_WEBSERVICE_VERSION }}
-          docker tag ccdc-python-api:latest ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:latest
-          docker push ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:${{ env.CSP_WEBSERVICE_VERSION }}
-          docker push ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:latest 
+      - name: bad boi
+        run: echo "${{ secrets.ARTIFACTORY_GH__READ_ONLY_EXPORT }}"

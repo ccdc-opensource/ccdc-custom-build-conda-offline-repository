@@ -5,7 +5,6 @@ name: Build Python API container
 on:
   repository_dispatch:
     types: [teamcity_finish]
-  push:    # for testing
 
 env:
   DOCKER_BUILD_CONTEXT: './deployments/docker/'

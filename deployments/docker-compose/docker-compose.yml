@@ -1,0 +1,16 @@
+version: '3.6'
+
+x-common-variables: &common-variables
+  CCDC_LICENSING_CONFIGURATION: "$CCDC_LICENSE"
+  CSDHOME: "/ccdc/databases/"
+
+services:
+  ccdc-python-api:
+    # image: ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:latest    # production
+    image: api-test:latest                                                             # testing
+    container_name: ccdc-python-api
+    restart: always
+    volumes:
+      - './databases:/ccdc/databases'
+    environment:
+       <<: *common-variables

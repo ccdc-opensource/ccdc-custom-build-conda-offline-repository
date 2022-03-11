@@ -1,3 +1,6 @@
 output
 build_temp
 __pycache__
+deployments/docker/*.zip
+deployments/docker/*.tar.gz
+deployments/docker-compose/databases/*

@@ -6,9 +6,9 @@ x-common-variables: &common-variables
 
 services:
   ccdc-python-api:
-    # image: ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/ccdc-python-api:latest    # production
-    image: api-test:latest                                                             # testing
-    container_name: ccdc-python-api
+    image: ccdc-docker-internal-artifactory.ccdc.cam.ac.uk/csd-python-api:latest    # production
+  # image: csd-python-api:latest                                                    # testing
+    container_name: csd-python-api
     restart: always
     volumes:
       - './databases:/ccdc/databases'

@@ -47,7 +47,7 @@ RUN unzip ./csd-python-api-package.zip && \
 # We want every invoked bash shell to have an activated python environment. 
 # We also want every invocation of python to use CCDC base python
 RUN echo "source /ccdc/csd-python-api/bin/activate" >> /etc/bashrc && \
-    rm -f /usr/bin/python && \
-    ln -s /ccdc/csd-python-api/bin/python /usr/bin/python
+    rm -f /usr/bin/python3 && \
+    ln -s /ccdc/csd-python-api/bin/python /usr/bin/python3
 
 CMD ["tail", "-f", "/dev/null"]

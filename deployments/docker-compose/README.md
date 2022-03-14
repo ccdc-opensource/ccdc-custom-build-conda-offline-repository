@@ -19,7 +19,7 @@ docker-compose up -d
 To create a shell within the container:
 
 ```sh
-docker-compose exec ccdc-python-api /bin/bash
+docker-compose exec csd-python-api /bin/bash
 ```
 
 This will automatically source the virtual environment so any invocations of `python` will be that which already containes the CCDC Python API and relevant packages.
@@ -27,7 +27,7 @@ This will automatically source the virtual environment so any invocations of `py
 If you want to run a particular script against the API, you can run this without going into the container. For the file `test.py` in a local directory:
 
 ```sh
-docker-compose run -v ./test.py:/ccdc/test.py ccdc-python-api python test.py
+docker-compose run -v ./test.py:/ccdc/test.py csd-python-api python3 test.py
 ```
 
 ## Configuring the Container

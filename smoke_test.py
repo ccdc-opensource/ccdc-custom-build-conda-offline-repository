@@ -1,5 +1,5 @@
 import sys
-full = sys.argv[1] == 'full'
+prefix = sys.argv[1]
 
 import_ok = True
 
@@ -63,7 +63,7 @@ except:
     print('Cannot import docxtpl')
     import_ok = False
 
-if full:
+if prefix == 'full':
     try:
         import matplotlib
         matplotlib.use('Agg')

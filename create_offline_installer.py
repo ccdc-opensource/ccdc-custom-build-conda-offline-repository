@@ -27,7 +27,7 @@ def required_offline_conda_packages(prefix, extra_conda_packages):
     api_pkgs = [
         'pillow<9.0',
         'lxml==4.6.3',
-        'numpy==1.21.3', # also used in mercury scripts
+        'numpy==1.21.6', # also used in mercury scripts
         'pytest',
         'pandas==1.2.5', # also used in mercury scripts
         'xgboost==1.5.0', # equivalent to py-xgboost, but more used
@@ -467,6 +467,7 @@ conda install -y --channel "$INSTALLER_DIR/conda_offline_channel" --offline --ov
 shift
 while test $# -gt 1
 do
+    echo "CCDC Miniconda installer: Installing $2"
     conda install -y --channel "$INSTALLER_DIR/$1_conda_channel" --offline --override-channels -q $2
     [ $? -eq 0 ] || exit $?; # exit if non-zero return code
     shift

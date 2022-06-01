@@ -17,10 +17,8 @@ channel_priority: strict
 
 channels:
   - conda-forge
-  # We are keeping defaults as conda-forge is not carrying py-xgboost for windows!
-  # Check for yourself if this is still the case here
-  # https://anaconda.org/conda-forge/py-xgboost
-  - defaults
+  # The defaults repo can additionally be used by those users with a Conda Enterprise agreement.
+  # - defaults
 
 # Show channel URLs when displaying what is going to be downloaded
 # and in 'conda list'. The default is False.

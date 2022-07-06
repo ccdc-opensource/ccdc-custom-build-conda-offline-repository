@@ -14,9 +14,16 @@ import tempfile
 import re
 import pathlib
 
+
+MINICONDA_INSTALLER_VERSION = {
+        '3.7': 'py37_4.9.2',
+        '3.9': 'py39_4.9.2',
+        }
+
+
 # Pass the required miniconda installer version from devops pipelines variables
-def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
+def miniconda_installer_version(python_version):
+    return MINICONDA_INSTALLER_VERSION[python_version]
 
 def required_offline_conda_packages(prefix, extra_conda_packages):
     # these are the packages that we recommend for using the API
@@ -216,7 +223,7 @@ if IS_WINDOWS:
                     SMTO_ABORTIFHUNG, 5000, ctypes.pointer(wintypes.DWORD()))
 
 class MinicondaOfflineInstaller:
-    def __init__(self, prefix=None, extra_conda_packages=None):
+    def __init__(self, python_version, prefix=None, extra_conda_packages=None):
         '''
         If prefix is not None, something other than the full installer (which
         is used in the CSDS installer to run Mercury scripts) will be built.
@@ -229,6 +236,7 @@ class MinicondaOfflineInstaller:
         packages to add.
 
         '''
+        self.python_version = python_version
         self.prefix = prefix
         self.extra_conda_packages = extra_conda_packages if extra_conda_packages else []
         self.extensions = {
@@ -266,7 +274,7 @@ class MinicondaOfflineInstaller:
     @property
     def artefact_id(self):
         '''The artefact identifies, based on build id and system, used to find the right files in devops pipelines'''
-        return self.name + '-' + miniconda_installer_version() + '-' + build_id() + '-' + build_osname()
+        return self.name + '-' + miniconda_installer_version(self.python_version) + '-' + build_id() + '-' + build_osname()
     
     @property
     def output_dir(self):
@@ -292,7 +300,7 @@ class MinicondaOfflineInstaller:
         return '{0}{1}-{2}-{3}-{4}.{5}'.format(
             self.distribution,
             self.conda_python_version,
-            miniconda_installer_version(),
+            miniconda_installer_version(self.python_version),
             self.platforms[self.system],
             self.architectures[self.bitness],
             self.extensions[self.system])
@@ -600,9 +608,9 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
 
     def build(self):
         # Set the variable in the azure pipeline so that the archiving stage later can pick up the right version
-        print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version()}", flush=True)
+        print(f"##vso[task.setvariable variable=miniconda_installer_version]{miniconda_installer_version(self.python_version)}", flush=True)
 
-        print(f'##[group]Cleaning up build and output directories for prefix={self.prefix}', flush=True)
+        print(f'##[group]Cleaning up build and output directories for prefix={self.prefix} python version={self.python_version}', flush=True)
         self.clean_build_and_output()
         os.makedirs(self.build_install_dir)
         os.makedirs(self.output_dir)
@@ -674,7 +682,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
-        print(f'##[group]Test install script for prefix={self.prefix}', flush=True)
+        print(f'##[group]Test install script for prefix={self.prefix} python version={self.python_version}', flush=True)
         self.test_install_script()
         time.sleep(0.5)
         print('##[endgroup]')
@@ -682,8 +690,10 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
 if __name__ == '__main__':
     # To be used in the webcsd-csp installer for landscape report generation
     MinicondaOfflineInstaller(
+            '3.7',
             prefix='webcsd-csp',
             extra_conda_packages=['docxtpl==0.11.5', 'matplotlib-base==3.4.3']
             ).build()
-    MinicondaOfflineInstaller().build()
+    MinicondaOfflineInstaller('3.7').build()
+    MinicondaOfflineInstaller('3.9').build()
 

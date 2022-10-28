@@ -16,7 +16,7 @@ import pathlib
 
 # Pass the required miniconda installer version from devops pipelines variables
 def miniconda_installer_version():
-    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py37_4.9.2')
+    return os.environ.get('MINICONDA_INSTALLER_VERSION', 'py39_4.12.0')
 
 def required_offline_conda_packages(prefix, extra_conda_packages):
     # these are the packages that we recommend for using the API
@@ -512,7 +512,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
             subprocess.check_call([test_script, os.path.join(tmpdirname, 'miniconda'), self.prefix if self.prefix is not None else 'full'])
 
     def pin_python_version(self):
-        pinned_python = 'python 3.7'
+        pinned_python = 'python 3.9'
         pin_file = os.path.join(self.build_install_dir, 'conda-meta', 'pinned')
         with open(pin_file, "w") as pinned:
             pinned.write(f"{pinned_python}\n")

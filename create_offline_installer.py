@@ -27,11 +27,12 @@ def required_offline_conda_packages(prefix, extra_conda_packages):
     api_pkgs = [
         'pillow<9.0',
         'lxml==4.6.3',
-        'numpy==1.21.6', # also used in mercury scripts
+        'numpy==1.21.6',        # also used in mercury scripts
         'pytest',
-        'pandas==1.2.5', # also used in mercury scripts
-        'xgboost==1.5.0', # equivalent to py-xgboost, but more used
+        'pandas==1.2.5',        # also used in mercury scripts
+        'xgboost==1.5.0',       # equivalent to py-xgboost, but more used
         'scikit-learn==0.24.2',
+        'pip',                  # For new installer
     ]
 
     # these packages are required by other scripts that we distribute
@@ -560,7 +561,7 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         """Install a conda package given its specifications.
         E.g. self.conda_install('numpy==1.9.2', 'lxml')
         """
-        self._run_pkg_manager('conda', ['install', '-y', '-q'], *package_specs)
+        self._run_pkg_manager('conda', ['install', '-y'], *package_specs)
 
     def _run_pkg_manager(self, pkg_manager_name, extra_args, *package_specs):
         my_env = os.environ.copy()
@@ -570,11 +571,15 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         if IS_WINDOWS:
             my_env['PATH'] = "%s;%s" % (os.path.join(self.build_install_dir, 'Library', 'bin'), my_env['PATH'])
         args = [self._args_for(pkg_manager_name)] + extra_args + list(package_specs)
-        outcome = subprocess.call(args, env=my_env)
-        if outcome != 0:
+        outcome = subprocess.run(args, env=my_env, capture_output=True)
+        print('conda command:')
+        print(' '.join(args))
+        if outcome.returncode != 0:
             print('_run_pkg_manager fail info')
             print(args)
             print(my_env)
+            print(outcome.stdout.decode())
+            print(outcome.stderr.decode())
             raise RuntimeError('Could not install {0} with {1}'.format(' '.join(package_specs), pkg_manager_name))
 
     def _args_for(self, executable_name):
@@ -644,6 +649,11 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
         time.sleep(0.5)
         print('##[endgroup]')
 
+        print('##[group]Install conda-build in order to index the offline channel', flush=True)
+        self.conda_install('conda-build')
+        time.sleep(0.5)
+        print('##[endgroup]')
+
         # Pin the python version here
         # We used to pinned it before installing all the required modules but
         # that caused conda to produce lots of version conflicts when
@@ -656,11 +666,6 @@ cp "$INSTALLER_DIR/condarc-for-offline-installer-creation" "$TARGET_MINICONDA/co
 
         print('##[group]Copy packages to output directory', flush=True)
         self.copy_packages()
-        time.sleep(0.5)
-        print('##[endgroup]')
-
-        print('##[group]Install conda-build in order to index the offline channel', flush=True)
-        self.conda_install('conda-build')
         time.sleep(0.5)
         print('##[endgroup]')
 
